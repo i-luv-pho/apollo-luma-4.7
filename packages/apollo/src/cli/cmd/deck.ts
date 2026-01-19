@@ -1160,7 +1160,7 @@ function generateDeckHTML(title: string, slides: string[] = [], autoDownload: bo
 }
 
 export const DeckCommand = cmd({
-  command: "deck [topic..]",
+  command: "$0 [topic..]",
   describe: "Generate an AI-powered pitch deck",
   builder: (yargs: Argv) => {
     return yargs
