@@ -8,6 +8,8 @@ import { createApolloClient } from "@apollo-ai/sdk/v2"
 import { Server } from "../../server/server"
 import open from "open"
 import { validateApiKey, incrementUsage } from "../../deck/supabase"
+import { extractPDF, chunkText, isScannedPDF } from "../../util/pdf"
+import { summarizeDocument } from "../../util/summarize"
 
 const DECK_DIR = path.join(process.env.HOME || "~", "Apollo", "decks")
 
@@ -1189,6 +1191,11 @@ export const DeckCommand = cmd({
         type: "string",
         alias: "o",
         describe: "Output directory (default: ~/Apollo/decks)",
+      })
+      .option("file", {
+        type: "string",
+        alias: "f",
+        describe: "PDF file to create deck from",
       })
   },
   handler: async (args) => {
