@@ -1,0 +1,109 @@
+Automates web browsing with a headless browser. Sessions persist across tool calls within a conversation.
+
+Actions:
+
+navigate - Go to a URL
+```
+action: "navigate"
+url: "https://example.com"
+```
+
+click - Click an element
+```
+action: "click"
+selector: "button.submit"
+```
+
+type - Type text into an input
+```
+action: "type"
+selector: "input[name='search']"
+text: "search query"
+```
+
+screenshot - Capture the page
+```
+action: "screenshot"
+path: "screenshots/page.png"
+fullPage: true
+```
+
+extract - Get content from the page
+```
+action: "extract"
+extractType: "text"  # or "html", "links", "images", "tables", "structured"
+```
+
+scroll - Scroll the page
+```
+action: "scroll"
+direction: "down"  # or "up", "top", "bottom"
+amount: 500
+```
+
+wait - Wait for element or time
+```
+action: "wait"
+waitFor: ".loading-complete"  # selector or milliseconds
+```
+
+evaluate - Run JavaScript in page context
+```
+action: "evaluate"
+script: "document.querySelectorAll('a').length"
+```
+
+pdf - Save page as PDF
+```
+action: "pdf"
+path: "exports/page.pdf"
+```
+
+Navigation:
+- back: Go back in history
+- forward: Go forward in history
+- refresh: Reload current page
+- close: Close browser session
+
+Extract types:
+- text: Plain text content of the page
+- html: Full HTML source
+- links: Array of {text, href} objects
+- images: Array of {src, alt, width, height} objects
+- tables: Array of table data with headers and rows
+- structured: Title, URL, metadata, headings, and main content
+
+Usage examples:
+
+Search and scrape:
+```
+1. navigate to "https://google.com"
+2. type "Apollo AI" into "input[name='q']"
+3. click "input[type='submit']"
+4. extract links from results
+```
+
+Fill a form:
+```
+1. navigate to "https://example.com/login"
+2. type username into "#username"
+3. type password into "#password"
+4. click "button[type='submit']"
+```
+
+Take screenshots for testing:
+```
+1. navigate to "https://myapp.com"
+2. screenshot to "tests/home.png"
+3. click "#dashboard"
+4. screenshot fullPage to "tests/dashboard.png"
+```
+
+Notes:
+- Browser sessions persist until explicitly closed or conversation ends
+- Uses Playwright Chromium in headless mode
+- Screenshots default to screenshots/ directory
+- Timeout is 30 seconds by default
+- Content extraction is truncated at 50,000 characters
+- The evaluate action requires elevated permissions
+- Install Playwright with: npx playwright install chromium

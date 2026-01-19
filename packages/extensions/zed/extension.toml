@@ -1,0 +1,36 @@
+id = "apollo"
+name = "Apollo"
+description = "The open source coding agent."
+version = "0.0.1"
+schema_version = 1
+authors = ["Metamorphosis Labs"]
+repository = "https://github.com/i-luv-pho/apollov2"
+
+[agent_servers.apollo]
+name = "Apollo"
+icon = "./icons/apollo.svg"
+
+[agent_servers.apollo.targets.darwin-aarch64]
+archive = "https://github.com/i-luv-pho/apollov2/releases/download/v0.0.1/apollo-darwin-arm64.zip"
+cmd = "./apollo"
+args = ["acp"]
+
+[agent_servers.apollo.targets.darwin-x86_64]
+archive = "https://github.com/i-luv-pho/apollov2/releases/download/v0.0.1/apollo-darwin-x64.zip"
+cmd = "./apollo"
+args = ["acp"]
+
+[agent_servers.apollo.targets.linux-aarch64]
+archive = "https://github.com/i-luv-pho/apollov2/releases/download/v0.0.1/apollo-linux-arm64.tar.gz"
+cmd = "./apollo"
+args = ["acp"]
+
+[agent_servers.apollo.targets.linux-x86_64]
+archive = "https://github.com/i-luv-pho/apollov2/releases/download/v0.0.1/apollo-linux-x64.tar.gz"
+cmd = "./apollo"
+args = ["acp"]
+
+[agent_servers.apollo.targets.windows-x86_64]
+archive = "https://github.com/i-luv-pho/apollov2/releases/download/v0.0.1/apollo-windows-x64.zip"
+cmd = "./apollo.exe"
+args = ["acp"]

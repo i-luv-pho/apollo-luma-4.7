@@ -1,0 +1,93 @@
+Connects to and queries SQL and NoSQL databases.
+
+Supported databases:
+- PostgreSQL (pg)
+- MySQL (mysql2)
+- SQLite (better-sqlite3)
+- MongoDB (mongodb)
+- Redis (ioredis)
+
+Actions:
+
+connect - Establish database connection
+```
+action: "connect"
+type: "postgres"
+host: "localhost"
+port: 5432
+database: "mydb"
+username: "user"
+password: "pass"
+name: "main"  # Connection name for reuse
+```
+
+Or with connection string:
+```
+action: "connect"
+type: "postgres"
+connectionString: "postgresql://user:pass@localhost:5432/mydb"
+```
+
+query - Execute SELECT queries
+```
+action: "query"
+sql: "SELECT * FROM users WHERE id = $1"
+params: [123]
+```
+
+execute - Execute INSERT/UPDATE/DELETE
+```
+action: "execute"
+sql: "INSERT INTO users (name, email) VALUES ($1, $2)"
+params: ["John", "john@example.com"]
+```
+
+schema - Get database structure
+```
+action: "schema"
+table: "users"  # Optional - omit to list all tables
+```
+
+mongodb - MongoDB-specific operations
+```
+action: "mongodb"
+collection: "users"
+operation: "find"
+filter: { "status": "active" }
+limit: 10
+```
+
+redis - Redis commands
+```
+action: "redis"
+command: "GET"
+args: ["mykey"]
+```
+
+disconnect - Close connection
+```
+action: "disconnect"
+name: "main"
+```
+
+MongoDB operations:
+- find, findOne: Query documents
+- insertOne, insertMany: Insert documents
+- updateOne, updateMany: Update documents
+- deleteOne, deleteMany: Delete documents
+- count: Count documents
+- aggregate: Aggregation pipeline
+
+Redis commands:
+- GET, SET, DEL: String operations
+- HGET, HSET, HGETALL: Hash operations
+- LPUSH, RPUSH, LRANGE: List operations
+- SADD, SMEMBERS: Set operations
+- ZADD, ZRANGE: Sorted set operations
+
+Notes:
+- Connections are cached and reused across tool calls
+- Use parameterized queries to prevent SQL injection
+- Write operations require elevated permissions
+- Install required packages: npm install pg mysql2 better-sqlite3 mongodb ioredis
+- Store credentials securely using credential name reference

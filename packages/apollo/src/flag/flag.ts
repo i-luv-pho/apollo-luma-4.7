@@ -1,0 +1,49 @@
+export namespace Flag {
+  export const APOLLO_AUTO_SHARE = truthy("APOLLO_AUTO_SHARE")
+  export const APOLLO_GIT_BASH_PATH = process.env["APOLLO_GIT_BASH_PATH"]
+  export const APOLLO_CONFIG = process.env["APOLLO_CONFIG"]
+  export const APOLLO_CONFIG_DIR = process.env["APOLLO_CONFIG_DIR"]
+  export const APOLLO_CONFIG_CONTENT = process.env["APOLLO_CONFIG_CONTENT"]
+  export const APOLLO_DISABLE_AUTOUPDATE = truthy("APOLLO_DISABLE_AUTOUPDATE")
+  export const APOLLO_DISABLE_PRUNE = truthy("APOLLO_DISABLE_PRUNE")
+  export const APOLLO_DISABLE_TERMINAL_TITLE = truthy("APOLLO_DISABLE_TERMINAL_TITLE")
+  export const APOLLO_PERMISSION = process.env["APOLLO_PERMISSION"]
+  export const APOLLO_DISABLE_DEFAULT_PLUGINS = truthy("APOLLO_DISABLE_DEFAULT_PLUGINS")
+  export const APOLLO_DISABLE_LSP_DOWNLOAD = truthy("APOLLO_DISABLE_LSP_DOWNLOAD")
+  export const APOLLO_ENABLE_EXPERIMENTAL_MODELS = truthy("APOLLO_ENABLE_EXPERIMENTAL_MODELS")
+  export const APOLLO_DISABLE_AUTOCOMPACT = truthy("APOLLO_DISABLE_AUTOCOMPACT")
+  export const APOLLO_DISABLE_MODELS_FETCH = truthy("APOLLO_DISABLE_MODELS_FETCH")
+  export const APOLLO_FAKE_VCS = process.env["APOLLO_FAKE_VCS"]
+  export const APOLLO_CLIENT = process.env["APOLLO_CLIENT"] ?? "cli"
+  export const APOLLO_SERVER_PASSWORD = process.env["APOLLO_SERVER_PASSWORD"]
+  export const APOLLO_SERVER_USERNAME = process.env["APOLLO_SERVER_USERNAME"]
+
+  // Experimental
+  export const APOLLO_EXPERIMENTAL = truthy("APOLLO_EXPERIMENTAL")
+  export const APOLLO_EXPERIMENTAL_FILEWATCHER = truthy("APOLLO_EXPERIMENTAL_FILEWATCHER")
+  export const APOLLO_EXPERIMENTAL_DISABLE_FILEWATCHER = truthy("APOLLO_EXPERIMENTAL_DISABLE_FILEWATCHER")
+  export const APOLLO_EXPERIMENTAL_ICON_DISCOVERY =
+    APOLLO_EXPERIMENTAL || truthy("APOLLO_EXPERIMENTAL_ICON_DISCOVERY")
+  export const APOLLO_EXPERIMENTAL_DISABLE_COPY_ON_SELECT = truthy("APOLLO_EXPERIMENTAL_DISABLE_COPY_ON_SELECT")
+  export const APOLLO_ENABLE_EXA =
+    truthy("APOLLO_ENABLE_EXA") || APOLLO_EXPERIMENTAL || truthy("APOLLO_EXPERIMENTAL_EXA")
+  export const APOLLO_EXPERIMENTAL_BASH_MAX_OUTPUT_LENGTH = number("APOLLO_EXPERIMENTAL_BASH_MAX_OUTPUT_LENGTH")
+  export const APOLLO_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS = number("APOLLO_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS")
+  export const APOLLO_EXPERIMENTAL_OUTPUT_TOKEN_MAX = number("APOLLO_EXPERIMENTAL_OUTPUT_TOKEN_MAX")
+  export const APOLLO_EXPERIMENTAL_OXFMT = APOLLO_EXPERIMENTAL || truthy("APOLLO_EXPERIMENTAL_OXFMT")
+  export const APOLLO_EXPERIMENTAL_LSP_TY = truthy("APOLLO_EXPERIMENTAL_LSP_TY")
+  export const APOLLO_EXPERIMENTAL_LSP_TOOL = APOLLO_EXPERIMENTAL || truthy("APOLLO_EXPERIMENTAL_LSP_TOOL")
+  export const APOLLO_EXPERIMENTAL_PLAN_MODE = APOLLO_EXPERIMENTAL || truthy("APOLLO_EXPERIMENTAL_PLAN_MODE")
+
+  function truthy(key: string) {
+    const value = process.env[key]?.toLowerCase()
+    return value === "true" || value === "1"
+  }
+
+  function number(key: string) {
+    const value = process.env[key]
+    if (!value) return undefined
+    const parsed = Number(value)
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined
+  }
+}

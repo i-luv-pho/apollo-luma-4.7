@@ -1,0 +1,28 @@
+name: test
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: run
+        run: |
+          git config --global user.email "bot@github.com/i-luv-pho/apollov2"
+          git config --global user.name "apollo"
+          bun turbo typecheck
+          bun turbo test
+        env:
+          CI: true

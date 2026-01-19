@@ -1,0 +1,73 @@
+Converts files between different formats.
+
+Supported conversions:
+
+Documents:
+- Markdown (md) -> PDF, HTML, DOCX, PPTX (requires Pandoc)
+- HTML -> PDF, DOCX, PPTX (uses wkhtmltopdf, LibreOffice, or Playwright)
+- DOCX, PPTX, XLSX -> PDF (requires LibreOffice)
+
+Images:
+- PNG, JPG, WebP -> PNG, JPG, WebP (uses ImageMagick or Sharp)
+- PDF -> PNG, JPG (requires Poppler pdftoppm)
+
+Data:
+- JSON <-> YAML <-> CSV (built-in)
+- JSON/YAML/CSV -> XML (built-in)
+
+Usage examples:
+
+Convert Markdown to PDF:
+```
+input: "README.md"
+format: "pdf"
+```
+
+Convert HTML to PowerPoint:
+```
+input: "presentation.html"
+format: "pptx"
+```
+
+Convert image with resize:
+```
+input: "photo.jpg"
+format: "webp"
+options: { quality: 80, width: 800 }
+```
+
+Convert PDF page to image:
+```
+input: "document.pdf"
+format: "png"
+options: { page: 1, dpi: 300 }
+```
+
+Convert JSON to CSV:
+```
+input: "data.json"
+format: "csv"
+```
+
+Specify custom output path:
+```
+input: "source.md"
+format: "pdf"
+output: "output/document.pdf"
+```
+
+Dependencies:
+- Pandoc: For Markdown conversions (brew install pandoc)
+- LibreOffice: For Office document conversions (brew install --cask libreoffice)
+- wkhtmltopdf: For HTML to PDF (brew install wkhtmltopdf)
+- ImageMagick: For image conversions (brew install imagemagick)
+- Poppler: For PDF to image (brew install poppler)
+- Playwright: Fallback for HTML to PDF (auto-installed)
+- Sharp: Fallback for image conversions (npm dependency)
+
+Notes:
+- If a converter is not available, the tool will suggest how to install it
+- Output path is optional - defaults to same location with new extension
+- Image quality option (1-100) only applies to JPEG and WebP
+- PDF to image conversion can extract specific pages with the page option
+- The tool automatically detects input format from file extension

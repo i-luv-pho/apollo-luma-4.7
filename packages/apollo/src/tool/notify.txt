@@ -1,0 +1,92 @@
+Sends notifications across multiple channels: desktop, email, Slack, Discord, webhooks, and SMS.
+
+Channels:
+
+desktop - System notification
+```
+channel: "desktop"
+title: "Build Complete"
+message: "Your build finished successfully"
+sound: true
+```
+
+email - Send email via SMTP
+```
+channel: "email"
+to: "user@example.com"
+title: "Subject line"
+message: "Email body text"
+html: "<h1>Optional HTML</h1>"
+attachments: ["report.pdf"]
+```
+
+slack - Post to Slack channel
+```
+channel: "slack"
+message: "Deployment complete :rocket:"
+webhookUrl: "https://hooks.slack.com/services/..."
+slackChannel: "#deployments"
+username: "Apollo Bot"
+```
+
+discord - Post to Discord channel
+```
+channel: "discord"
+message: "Build status update"
+webhookUrl: "https://discord.com/api/webhooks/..."
+username: "Apollo"
+```
+
+webhook - Generic webhook
+```
+channel: "webhook"
+webhookUrl: "https://api.example.com/notifications"
+webhookMethod: "POST"
+message: "Event triggered"
+webhookBody: { "custom": "payload" }
+```
+
+sms - Send SMS via Twilio
+```
+channel: "sms"
+to: "+1234567890"
+message: "Alert: Server down"
+```
+
+Configuration:
+
+Store credentials for each service:
+- Email: Store SMTP config with credential name "smtp" (type: smtp)
+- Slack: Store webhook URL with credential name "slack" (type: webhook)
+- Discord: Store webhook URL with credential name "discord" (type: webhook)
+- SMS: Configure Twilio in config.json under notify.twilio
+
+Example SMTP credential:
+```
+type: "smtp"
+host: "smtp.gmail.com"
+port: 587
+username: "user@gmail.com"
+password: "app-password"
+```
+
+Example config.json for Twilio:
+```json
+{
+  "notify": {
+    "twilio": {
+      "accountSid": "AC...",
+      "authToken": "...",
+      "fromNumber": "+1..."
+    }
+  }
+}
+```
+
+Notes:
+- Desktop notifications work on macOS (osascript), Windows (PowerShell), and Linux (notify-send)
+- Email requires nodemailer package: npm install nodemailer
+- Slack/Discord webhooks can be created in their respective admin panels
+- SMS requires a Twilio account with SMS capability
+- All channels require appropriate permissions
+- Email and SMS have elevated permission requirements

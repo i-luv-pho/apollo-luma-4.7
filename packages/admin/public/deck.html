@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Slide Builder - Presentation</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      background: #0a0a0a;
+      position: relative;
+      overflow: hidden;
+      margin: 0 auto 40px;
+      page-break-after: always;
+    }
+
+    .slide-inner {
+      padding: 80px 120px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Slide 1 - Title */
+    .slide-1 {
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+    }
+
+    .slide-1 .slide-inner {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-1 h1 {
+      font-size: 120px;
+      font-weight: 800;
+      letter-spacing: -3px;
+      margin-bottom: 32px;
+      background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .slide-1 p {
+      font-size: 42px;
+      color: #71717a;
+      font-weight: 500;
+    }
+
+    /* Slide 2 - Problem */
+    .slide-2 .slide-inner {
+      justify-content: center;
+    }
+
+    .slide-2 .label {
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: #ef4444;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .slide-2 h2 {
+      font-size: 72px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 64px;
+      max-width: 1400px;
+    }
+
+    .slide-2 .problems {
+      display: flex;
+      gap: 48px;
+    }
+
+    .slide-2 .problem-item {
+      flex: 1;
+      padding: 40px;
+      background: #141414;
+      border-radius: 16px;
+      border: 1px solid #262626;
+    }
+
+    .slide-2 .problem-item h3 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #f87171;
+    }
+
+    .slide-2 .problem-item p {
+      font-size: 20px;
+      color: #a1a1aa;
+      line-height: 1.6;
+    }
+
+    /* Slide 3 - Solution */
+    .slide-3 {
+      background: linear-gradient(135deg, #0a0a0a 0%, #0f172a 100%);
+    }
+
+    .slide-3 .slide-inner {
+      justify-content: center;
+    }
+
+    .slide-3 .label {
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: #6366f1;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .slide-3 h2 {
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 64px;
+    }
+
+    .slide-3 .features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+      max-width: 1400px;
+    }
+
+    .slide-3 .feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+    }
+
+    .slide-3 .feature-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .slide-3 .feature h3 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .slide-3 .feature p {
+      font-size: 20px;
+      color: #a1a1aa;
+      line-height: 1.5;
+    }
+
+    /* Slide 4 - How it works */
+    .slide-4 .slide-inner {
+      justify-content: center;
+    }
+
+    .slide-4 h2 {
+      font-size: 56px;
+      font-weight: 700;
+      margin-bottom: 80px;
+      text-align: center;
+    }
+
+    .slide-4 .steps {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .slide-4 .step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+    }
+
+    .slide-4 .step-number {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 auto 24px;
+    }
+
+    .slide-4 .step h3 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .slide-4 .step p {
+      font-size: 18px;
+      color: #71717a;
+      line-height: 1.5;
+    }
+
+    .slide-4 .arrow {
+      position: absolute;
+      right: -40px;
+      top: 40px;
+      color: #3f3f46;
+      font-size: 32px;
+    }
+
+    /* Slide 5 - Comparison */
+    .slide-5 .slide-inner {
+      justify-content: center;
+    }
+
+    .slide-5 h2 {
+      font-size: 56px;
+      font-weight: 700;
+      margin-bottom: 64px;
+      text-align: center;
+    }
+
+    .slide-5 .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .slide-5 .col {
+      padding: 48px;
+      border-radius: 24px;
+    }
+
+    .slide-5 .col-others {
+      background: #1c1917;
+      border: 2px solid #44403c;
+    }
+
+    .slide-5 .col-us {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      border: 2px solid #4f46e5;
+    }
+
+    .slide-5 .col h3 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .slide-5 .col-others h3 {
+      color: #a8a29e;
+    }
+
+    .slide-5 .col-us h3 {
+      color: #a5b4fc;
+    }
+
+    .slide-5 .col ul {
+      list-style: none;
+    }
+
+    .slide-5 .col li {
+      font-size: 24px;
+      padding: 20px 0;
+      border-bottom: 1px solid #3f3f46;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .slide-5 .col li:last-child {
+      border-bottom: none;
+    }
+
+    .slide-5 .col-others li {
+      color: #a1a1aa;
+    }
+
+    .slide-5 .col-us li {
+      color: #e0e7ff;
+    }
+
+    .slide-5 .icon-x {
+      color: #ef4444;
+      font-size: 28px;
+    }
+
+    .slide-5 .icon-check {
+      color: #22c55e;
+      font-size: 28px;
+    }
+
+    /* Slide 6 - Closing */
+    .slide-6 {
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #312e81 100%);
+    }
+
+    .slide-6 .slide-inner {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-6 blockquote {
+      font-size: 52px;
+      font-weight: 600;
+      line-height: 1.4;
+      max-width: 1200px;
+      margin-bottom: 64px;
+      color: #e0e7ff;
+    }
+
+    .slide-6 .divider {
+      width: 120px;
+      height: 4px;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      border-radius: 2px;
+      margin-bottom: 48px;
+    }
+
+    .slide-6 p {
+      font-size: 28px;
+      color: #71717a;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: #0a0a0a;
+      }
+      .slide {
+        margin: 0;
+        page-break-after: always;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1: Title -->
+  <section class="slide slide-1">
+    <div class="slide-inner">
+      <h1>DeckAI</h1>
+      <p>AI that actually thinks about your presentation</p>
+    </div>
+  </section>
+
+  <!-- Slide 2: The Problem -->
+  <section class="slide slide-2">
+    <div class="slide-inner">
+      <div class="label">The Problem</div>
+      <h2>Current AI slide tools don't think.<br>They just fill templates.</h2>
+      <div class="problems">
+        <div class="problem-item">
+          <h3>Weak Models</h3>
+          <p>Built on outdated AI that needs heavy prompt engineering to produce anything usable</p>
+        </div>
+        <div class="problem-item">
+          <h3>No Context</h3>
+          <p>No research, no understanding of your company, industry, or what you actually need</p>
+        </div>
+        <div class="problem-item">
+          <h3>Same Formula</h3>
+          <p>Every deck: Problem → Solution → Team → Ask for money. No matter what.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 3: Our Approach -->
+  <section class="slide slide-3">
+    <div class="slide-inner">
+      <div class="label">Our Approach</div>
+      <h2>Start with the best AI.<br>Give it the right context.</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🧠</div>
+          <div>
+            <h3>Best-in-class AI</h3>
+            <p>Powered by Claude Opus 4.5, not a weak model compensating with tricks</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔍</div>
+          <div>
+            <h3>Real Research</h3>
+            <p>Web search to understand your company, industry, and competitors</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">💭</div>
+          <div>
+            <h3>Actual Reasoning</h3>
+            <p>Thinks about what kind of presentation this should actually be</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📤</div>
+          <div>
+            <h3>Portable Output</h3>
+            <p>Export to PPTX for Canva, Google Slides, or PowerPoint</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 4: How It Works -->
+  <section class="slide slide-4">
+    <div class="slide-inner">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Describe</h3>
+          <p>Tell us what you're presenting and to whom</p>
+          <span class="arrow">→</span>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>Research</h3>
+          <p>AI gathers context from the web</p>
+          <span class="arrow">→</span>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Reason</h3>
+          <p>AI plans the right structure</p>
+          <span class="arrow">→</span>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <h3>Generate</h3>
+          <p>Creates thoughtful, tailored slides</p>
+          <span class="arrow">→</span>
+        </div>
+        <div class="step">
+          <div class="step-number">5</div>
+          <h3>Export</h3>
+          <p>Download as PPTX</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 5: Comparison -->
+  <section class="slide slide-5">
+    <div class="slide-inner">
+      <h2>The Difference</h2>
+      <div class="comparison">
+        <div class="col col-others">
+          <h3>Other Tools</h3>
+          <ul>
+            <li><span class="icon-x">✕</span> Weak AI models</li>
+            <li><span class="icon-x">✕</span> Heavy prompt engineering</li>
+            <li><span class="icon-x">✕</span> Template filling</li>
+            <li><span class="icon-x">✕</span> No research capability</li>
+            <li><span class="icon-x">✕</span> One-size-fits-all</li>
+          </ul>
+        </div>
+        <div class="col col-us">
+          <h3>DeckAI</h3>
+          <ul>
+            <li><span class="icon-check">✓</span> Claude Opus 4.5</li>
+            <li><span class="icon-check">✓</span> Clean, purpose-built prompts</li>
+            <li><span class="icon-check">✓</span> Context-aware generation</li>
+            <li><span class="icon-check">✓</span> Web search for research</li>
+            <li><span class="icon-check">✓</span> Adapts to your use case</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 6: Closing -->
+  <section class="slide slide-6">
+    <div class="slide-inner">
+      <blockquote>"Stop trying to make bad AI work through clever UX. Start with the best AI and let it do what it's actually good at."</blockquote>
+      <div class="divider"></div>
+      <p>The future of presentations</p>
+    </div>
+  </section>
+
+</body>
+</html>

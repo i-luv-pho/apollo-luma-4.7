@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deck — AI Pitch Deck Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fafafa;
+      color: #1a1a1a;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px;
+      gap: 60px;
+    }
+
+    .slide {
+      width: 1280px;
+      height: 720px;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 80px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .slide-number {
+      position: absolute;
+      bottom: 40px;
+      right: 60px;
+      font-size: 13px;
+      color: #999;
+      font-weight: 500;
+    }
+
+    /* Slide 1: Title */
+    .slide-title {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-title h1 {
+      font-size: 96px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+    }
+
+    .slide-title .tagline {
+      font-size: 28px;
+      color: #666;
+      font-weight: 400;
+    }
+
+    /* Slide 2: Problem */
+    .slide-problem {
+      justify-content: center;
+    }
+
+    .slide-problem .label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #999;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .slide-problem h2 {
+      font-size: 40px;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 32px;
+      max-width: 900px;
+    }
+
+    /* Broken Workflow Diagram */
+    .broken-workflow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      margin-top: 24px;
+    }
+
+    .workflow-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 180px;
+    }
+
+    .workflow-box {
+      border: 1px solid #1a1a1a;
+      padding: 20px 16px;
+      text-align: center;
+      width: 160px;
+      background: #fff;
+    }
+
+    .workflow-box.broken {
+      border-style: dashed;
+      border-color: #999;
+    }
+
+    .workflow-box .name {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .workflow-box .sub {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .workflow-label {
+      font-size: 11px;
+      color: #999;
+      margin-top: 12px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .workflow-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 60px;
+      position: relative;
+    }
+
+    .workflow-arrow::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 8px;
+      height: 1px;
+      background: #1a1a1a;
+    }
+
+    .workflow-arrow::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      border-top: 1px solid #1a1a1a;
+      border-right: 1px solid #1a1a1a;
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .workflow-arrow.broken::before {
+      background: none;
+      border-top: 1px dashed #999;
+    }
+
+    .workflow-arrow.broken::after {
+      border-color: #999;
+    }
+
+    /* Slide 3: Insight */
+    .slide-insight {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-insight h2 {
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      max-width: 900px;
+    }
+
+    .slide-insight h2 span {
+      color: #666;
+    }
+
+    /* Slide 4: Solution */
+    .slide-solution {
+      justify-content: center;
+    }
+
+    .slide-solution .label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #999;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .slide-solution h2 {
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 32px;
+      max-width: 800px;
+    }
+
+    /* Unified Workflow Container */
+    .unified-workflow {
+      border: 2px solid #1a1a1a;
+      padding: 32px 40px;
+      margin-top: 16px;
+    }
+
+    .unified-workflow-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .unified-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .unified-box {
+      border: 1px solid #1a1a1a;
+      padding: 24px 20px;
+      text-align: center;
+      width: 180px;
+      background: #fff;
+    }
+
+    .unified-box .name {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .unified-box .sub {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .unified-label {
+      font-size: 11px;
+      color: #666;
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .unified-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 80px;
+      position: relative;
+    }
+
+    .unified-arrow::before {
+      content: '';
+      position: absolute;
+      top: 40px;
+      left: 0;
+      right: 8px;
+      height: 2px;
+      background: #1a1a1a;
+    }
+
+    .unified-arrow::after {
+      content: '';
+      position: absolute;
+      top: 40px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      border-top: 2px solid #1a1a1a;
+      border-right: 2px solid #1a1a1a;
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .unified-done {
+      font-size: 15px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    /* Slide 5: How It Works */
+    .slide-how {
+      justify-content: center;
+    }
+
+    .slide-how h2 {
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 60px;
+      text-align: center;
+    }
+
+    .steps {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      position: relative;
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 24px;
+      left: 180px;
+      right: 180px;
+      height: 2px;
+      background: #1a1a1a;
+      z-index: 0;
+    }
+
+    .step {
+      flex: 1;
+      max-width: 220px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-num {
+      width: 48px;
+      height: 48px;
+      border: 2px solid #1a1a1a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 auto 20px;
+      background: #fff;
+    }
+
+    .step h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    /* Slide 6: Features */
+    .slide-features {
+      justify-content: center;
+    }
+
+    .slide-features h2 {
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 48px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature {
+      padding: 28px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+
+    .feature h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature p {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    /* Slide 7: Comparison */
+    .slide-compare {
+      justify-content: center;
+    }
+
+    .slide-compare h2 {
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 48px;
+      text-align: center;
+    }
+
+    .compare-table {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      gap: 0;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .compare-divider {
+      background: #e5e5e5;
+      width: 1px;
+    }
+
+    .compare-col {
+      padding: 32px 40px;
+    }
+
+    .compare-col.others {
+      background: #fafafa;
+    }
+
+    .compare-col.us {
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    .compare-col h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .compare-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .compare-col ul li {
+      font-size: 15px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .compare-col.others ul li {
+      color: #666;
+    }
+
+    .compare-col.us ul li {
+      color: #e0e0e0;
+    }
+
+    /* Slide 8: Demo */
+    .slide-demo {
+      justify-content: center;
+      align-items: center;
+      padding: 60px;
+    }
+
+    .slide-demo h2 {
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .terminal {
+      width: 100%;
+      max-width: 1000px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+      font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+    }
+
+    .terminal-header {
+      background: #2a2a2a;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333;
+    }
+
+    .terminal-title {
+      color: #e0e0e0;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .terminal-stats {
+      color: #888;
+      font-size: 12px;
+    }
+
+    .terminal-body {
+      padding: 24px;
+      color: #e0e0e0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .terminal-input {
+      color: #fff;
+      padding: 12px 16px;
+      background: #252525;
+      border-left: 3px solid #4a9eff;
+      margin-bottom: 20px;
+    }
+
+    .terminal-thinking {
+      margin-bottom: 16px;
+    }
+
+    .terminal-thinking .label {
+      color: #f5a623;
+      font-style: italic;
+    }
+
+    .terminal-thinking .text {
+      color: #888;
+    }
+
+    .terminal-response {
+      color: #e0e0e0;
+      margin-bottom: 20px;
+    }
+
+    .terminal-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #888;
+      font-size: 13px;
+    }
+
+    .terminal-status .dot {
+      width: 8px;
+      height: 8px;
+      background: #4a9eff;
+      border-radius: 50%;
+    }
+
+    .terminal-footer {
+      background: #252525;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #333;
+      font-size: 12px;
+    }
+
+    .terminal-footer-left {
+      display: flex;
+      gap: 12px;
+    }
+
+    .terminal-footer-left span {
+      color: #888;
+    }
+
+    .terminal-footer-left .highlight {
+      color: #4a9eff;
+    }
+
+    .terminal-footer-left .model {
+      color: #f5a623;
+    }
+
+    .terminal-footer-right {
+      color: #666;
+    }
+
+    /* Slide 9: CTA */
+    .slide-cta {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-cta h2 {
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+      line-height: 1.15;
+    }
+
+    .slide-cta p {
+      font-size: 22px;
+      color: #666;
+      max-width: 600px;
+      margin-bottom: 48px;
+    }
+
+    .cta-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 32px;
+      background: #1a1a1a;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Slide 1: Title -->
+    <div class="slide slide-title">
+      <h1>Deck</h1>
+      <div class="tagline">AI that thinks before it designs.</div>
+      <div class="slide-number">1 / 8</div>
+    </div>
+
+    <!-- Slide 2: Problem -->
+    <div class="slide slide-problem">
+      <div class="label">The Problem</div>
+      <h2>Building a deck today is a disconnected mess.</h2>
+
+      <div class="broken-workflow">
+        <div class="workflow-step">
+          <div class="workflow-box broken">
+            <div class="name">ChatGPT</div>
+            <div class="sub">Research</div>
+          </div>
+          <div class="workflow-label">context here</div>
+        </div>
+        <div class="workflow-arrow broken"></div>
+        <div class="workflow-step">
+          <div class="workflow-box broken">
+            <div class="name">Copy & Paste</div>
+            <div class="sub">Manual</div>
+          </div>
+          <div class="workflow-label">context lost</div>
+        </div>
+        <div class="workflow-arrow broken"></div>
+        <div class="workflow-step">
+          <div class="workflow-box broken">
+            <div class="name">Canva</div>
+            <div class="sub">Templates</div>
+          </div>
+          <div class="workflow-label">wrong style</div>
+        </div>
+        <div class="workflow-arrow broken"></div>
+        <div class="workflow-step">
+          <div class="workflow-box broken">
+            <div class="name">Result</div>
+            <div class="sub">???</div>
+          </div>
+          <div class="workflow-label">broken deck</div>
+        </div>
+      </div>
+
+      <div class="slide-number">2 / 8</div>
+    </div>
+
+    <!-- Slide 3: Insight -->
+    <div class="slide slide-insight">
+      <h2>Other tools make bad AI work through clever UX. <span>We start with the best AI and let it do what it's good at.</span></h2>
+      <div class="slide-number">3 / 8</div>
+    </div>
+
+    <!-- Slide 4: Solution -->
+    <div class="slide slide-solution">
+      <div class="label">The Solution</div>
+      <h2>One tool that does everything.</h2>
+
+      <div class="unified-workflow">
+        <div class="unified-workflow-inner">
+          <div class="unified-step">
+            <div class="unified-box">
+              <div class="name">Describe</div>
+              <div class="sub">Your company</div>
+            </div>
+            <div class="unified-label">You type</div>
+          </div>
+          <div class="unified-arrow"></div>
+          <div class="unified-step">
+            <div class="unified-box">
+              <div class="name">Research</div>
+              <div class="sub">+ Reason</div>
+            </div>
+            <div class="unified-label">AI thinks</div>
+          </div>
+          <div class="unified-arrow"></div>
+          <div class="unified-step">
+            <div class="unified-box">
+              <div class="name">Generate</div>
+              <div class="sub">Complete deck</div>
+            </div>
+            <div class="unified-label">PPTX export</div>
+          </div>
+          <div class="unified-arrow"></div>
+          <div class="unified-done">Done</div>
+        </div>
+      </div>
+
+      <div class="slide-number">4 / 8</div>
+    </div>
+
+    <!-- Slide 5: How It Works -->
+    <div class="slide slide-how">
+      <h2>How It Works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Describe</h3>
+          <p>Tell us about your company and what kind of deck you need</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Research</h3>
+          <p>AI searches the web to understand your context and market</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Reason</h3>
+          <p>AI thinks through the right structure and narrative for your deck</p>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <h3>Generate</h3>
+          <p>Get a complete deck you can export and edit anywhere</p>
+        </div>
+      </div>
+      <div class="slide-number">5 / 8</div>
+    </div>
+
+    <!-- Slide 6: Features -->
+    <div class="slide slide-features">
+      <h2>Key Features</h2>
+      <div class="features-grid">
+        <div class="feature">
+          <h3>Web Search</h3>
+          <p>Researches your company, competitors, and industry automatically</p>
+        </div>
+        <div class="feature">
+          <h3>Context Aware</h3>
+          <p>Adapts to pitch decks, sales decks, internal presentations, and more</p>
+        </div>
+        <div class="feature">
+          <h3>Clean Design</h3>
+          <p>Minimal, professional slides that don't look AI-generated</p>
+        </div>
+        <div class="feature">
+          <h3>PPTX Export</h3>
+          <p>Download and edit in any tool — Canva, Google Slides, PowerPoint</p>
+        </div>
+        <div class="feature">
+          <h3>Reasoning Visible</h3>
+          <p>See why the AI made each decision so you can guide it</p>
+        </div>
+        <div class="feature">
+          <h3>Iterate Fast</h3>
+          <p>Refine slides with natural language — no clicking through menus</p>
+        </div>
+      </div>
+      <div class="slide-number">6 / 8</div>
+    </div>
+
+    <!-- Slide 7: Comparison -->
+    <div class="slide slide-compare">
+      <h2>Why We're Different</h2>
+      <div class="compare-table">
+        <div class="compare-col others">
+          <h3>Other AI Builders</h3>
+          <ul>
+            <li>— Weak models with heavy prompting</li>
+            <li>— Same generic templates for every deck</li>
+            <li>— No research or context</li>
+            <li>— Locked in proprietary formats</li>
+            <li>— Pattern matching, not reasoning</li>
+          </ul>
+        </div>
+        <div class="compare-divider"></div>
+        <div class="compare-col us">
+          <h3>Deck</h3>
+          <ul>
+            <li>+ Claude and top-tier models</li>
+            <li>+ Adaptive structure for each use case</li>
+            <li>+ Web search for real context</li>
+            <li>+ Export to PPTX, edit anywhere</li>
+            <li>+ Actual reasoning you can see</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-number">7 / 8</div>
+    </div>
+
+    <!-- Slide 8: CTA -->
+    <div class="slide slide-cta">
+      <h2>Better AI. Better decks.</h2>
+      <p>Stop fighting templates. Let the best AI think through your presentation.</p>
+      <div class="cta-box">Try Deck →</div>
+      <div class="slide-number">8 / 8</div>
+    </div>
+
+  </div>
+</body>
+</html>

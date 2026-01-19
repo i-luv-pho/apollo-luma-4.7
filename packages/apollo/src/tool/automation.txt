@@ -1,0 +1,92 @@
+Desktop automation for keyboard, mouse, screenshots, and window management.
+
+Actions:
+
+screenshot - Capture screen
+```
+action: "screenshot"
+path: "screenshots/capture.png"
+region: { x: 0, y: 0, width: 800, height: 600 }  # Optional
+```
+
+windows - List open windows
+```
+action: "windows"
+```
+
+focus - Focus a window by name
+```
+action: "focus"
+windowName: "Visual Studio Code"
+```
+
+type - Type text
+```
+action: "type"
+text: "Hello, world!"
+delay: 50  # ms between keystrokes
+```
+
+hotkey - Send keyboard shortcut
+```
+action: "hotkey"
+keys: ["cmd", "shift", "p"]  # Opens command palette
+```
+
+click - Click at screen coordinates
+```
+action: "click"
+x: 500
+y: 300
+button: "left"  # or "right", "middle"
+clicks: 2  # for double-click
+```
+
+clipboard_get - Get clipboard contents
+```
+action: "clipboard_get"
+```
+
+clipboard_set - Set clipboard contents
+```
+action: "clipboard_set"
+content: "Text to copy"
+```
+
+applescript - Run AppleScript (macOS only)
+```
+action: "applescript"
+script: "tell application \"Finder\" to open home"
+```
+
+powershell - Run PowerShell (Windows only)
+```
+action: "powershell"
+script: "Get-Process | Select-Object -First 5"
+```
+
+Hotkey key names:
+- Modifiers: cmd, ctrl, alt, shift
+- Special: enter, esc, tab, space, backspace, delete
+- Arrows: up, down, left, right
+- Letters/numbers: a-z, 0-9
+
+Common hotkeys:
+- ["cmd", "c"] - Copy
+- ["cmd", "v"] - Paste
+- ["cmd", "s"] - Save
+- ["cmd", "z"] - Undo
+- ["cmd", "shift", "z"] - Redo
+- ["cmd", "tab"] - Switch apps
+- ["cmd", "space"] - Spotlight (macOS)
+
+Platform support:
+- macOS: Full support via AppleScript, cliclick, screencapture
+- Windows: Full support via PowerShell, SendKeys
+- Linux: Requires xdotool, scrot/gnome-screenshot, wmctrl, xclip
+
+Notes:
+- Script execution (applescript/powershell) requires elevated permissions
+- Click actions may require accessibility permissions
+- Coordinates are in screen pixels from top-left
+- Install cliclick on macOS for reliable clicking: brew install cliclick

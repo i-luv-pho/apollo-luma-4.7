@@ -1,0 +1,32 @@
+name: apollo
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  apollo:
+    if: |
+      contains(github.event.comment.body, ' /apollo') ||
+      startsWith(github.event.comment.body, '/apollo')
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+      issues: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-bun
+
+      - name: Run apollo
+        uses: i-luv-pho/apollov2/github@latest
+        env:
+          APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+          APOLLO_PERMISSION: '{"bash": "deny"}'
+        with:
+          model: apollo/claude-opus-4-5

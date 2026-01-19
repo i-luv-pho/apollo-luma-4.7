@@ -1,0 +1,29 @@
+Opens files and URLs in their default applications or a specified application.
+
+Usage:
+- Use this tool to open files in their associated applications (e.g., PDFs in Preview, images in image viewers)
+- Use this tool to open URLs in the default web browser
+- You can specify a particular application using friendly names like "Visual Studio Code", "Chrome", "Firefox"
+- File paths can be absolute or relative to the current project directory
+
+Examples:
+- Open a file: `target: "README.md"` opens in default text editor
+- Open in specific app: `target: "src/index.ts", app: "Visual Studio Code"` opens in VS Code
+- Open URL: `target: "https://github.com"` opens in default browser
+- Open URL in specific browser: `target: "https://example.com", app: "Chrome"`
+- Wait for app to close: `target: "document.pdf", wait: true` waits until user closes the file
+- Open in background: `target: "notes.txt", background: true` opens without stealing focus
+
+Supported application aliases:
+- Editors: "Visual Studio Code", "VSCode", "Sublime Text", "Cursor", "Zed"
+- Browsers: "Chrome", "Firefox", "Safari", "Edge"
+- Office: "Word", "Excel", "PowerPoint", "Pages", "Numbers", "Keynote"
+- Design: "Figma", "Sketch", "Photoshop", "Illustrator"
+- Communication: "Slack", "Discord"
+- IDEs: "Xcode", "IntelliJ", "PyCharm", "WebStorm"
+
+Notes:
+- On macOS, uses the `open` command
+- On Windows, uses `start` or PowerShell
+- On Linux, uses `xdg-open` or the specified application command
+- The `newInstance` option only works on macOS

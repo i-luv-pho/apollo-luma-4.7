@@ -1,0 +1,92 @@
+name: "Apollo GitHub Action"
+description: "Run Apollo AI coding agent in GitHub Actions workflows - respond to issues, PRs, and comments"
+branding:
+  icon: "cpu"
+  color: "purple"
+
+inputs:
+  model:
+    description: "Model to use (e.g., openai/gpt-4o)"
+    required: true
+
+  agent:
+    description: "Agent to use. Must be a primary agent. Falls back to default_agent from config or 'build' if not found."
+    required: false
+
+  share:
+    description: "Share the Apollo session (defaults to true for public repos)"
+    required: false
+
+  prompt:
+    description: "Custom prompt to override the default prompt"
+    required: false
+
+  use_github_token:
+    description: "Use GITHUB_TOKEN directly instead of Apollo App token exchange. When true, skips OIDC and uses the GITHUB_TOKEN env var."
+    required: false
+    default: "false"
+
+  mentions:
+    description: "Comma-separated list of trigger phrases (case-insensitive). Defaults to '/apollo'"
+    required: false
+    default: "/apollo"
+
+  auto_review:
+    description: "Automatically review PRs on open/sync (true/false)"
+    required: false
+    default: "false"
+
+  auto_fix:
+    description: "Attempt automatic fixes when issues are found (true/false)"
+    required: false
+    default: "false"
+
+  allowed_tools:
+    description: "Comma-separated list of allowed tools (e.g., 'Read,Grep,Glob')"
+    required: false
+
+  oidc_base_url:
+    description: "Base URL for OIDC token exchange API. Only required when running a custom GitHub App install."
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get Apollo version
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(curl -sf https://api.github.com/repos/i-luv-pho/apollov2/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
+        echo "version=${VERSION:-latest}" >> $GITHUB_OUTPUT
+
+    - name: Cache Apollo
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.apollo/bin
+        key: apollo-${{ runner.os }}-${{ runner.arch }}-${{ steps.version.outputs.version }}
+
+    - name: Install Apollo
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: curl -fsSL https://github.com/i-luv-pho/apollov2/install | bash
+
+    - name: Add Apollo to PATH
+      shell: bash
+      run: echo "$HOME/.apollo/bin" >> $GITHUB_PATH
+
+    - name: Run Apollo
+      shell: bash
+      id: run_apollo
+      run: apollo github run
+      env:
+        MODEL: ${{ inputs.model }}
+        AGENT: ${{ inputs.agent }}
+        SHARE: ${{ inputs.share }}
+        PROMPT: ${{ inputs.prompt }}
+        USE_GITHUB_TOKEN: ${{ inputs.use_github_token }}
+        MENTIONS: ${{ inputs.mentions }}
+        AUTO_REVIEW: ${{ inputs.auto_review }}
+        AUTO_FIX: ${{ inputs.auto_fix }}
+        ALLOWED_TOOLS: ${{ inputs.allowed_tools }}
+        OIDC_BASE_URL: ${{ inputs.oidc_base_url }}

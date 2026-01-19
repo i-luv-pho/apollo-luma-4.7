@@ -1,0 +1,62 @@
+name: publish
+run-name: "${{ format('release {0}', inputs.bump || 'patch') }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Bump major, minor, or patch"
+        required: true
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: github.repository == 'i-luv-pho/apollov2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: git fetch --force --tags
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Setup Git
+        run: |
+          git config --global user.email "apollo@metamorphislabs.com"
+          git config --global user.name "Apollo CI"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+      - name: Build and Release
+        env:
+          APOLLO_BUMP: ${{ inputs.bump }}
+          APOLLO_BUILTIN_KEY: ${{ secrets.APOLLO_BUILTIN_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run script/publish.ts
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(cat packages/apollo/package.json | jq -r '.version')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Published Apollo v$VERSION"
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}

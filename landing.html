@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apollo - AI Coding Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --bg-elevated: #ffffff;
+      --bg-card: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --accent: #e63946;
+      --accent-light: #e6394615;
+      --accent-hover: #c1121f;
+      --border: #e5e5e5;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    code, .mono {
+      font-family: 'DM Mono', monospace;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 80px 24px;
+    }
+
+    .logo {
+      font-family: 'DM Sans', sans-serif;
+      font-size: clamp(3rem, 10vw, 6rem);
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      letter-spacing: -0.03em;
+    }
+
+    .tagline {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      color: var(--text-muted);
+      margin-bottom: 48px;
+      max-width: 500px;
+      font-weight: 400;
+    }
+
+    /* Install Box */
+    .install-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 600px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .terminal-header {
+      background: #f5f5f5;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27ca40; }
+
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .terminal-body {
+      padding: 20px 24px;
+    }
+
+    .command-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+    }
+
+    .prompt {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .command {
+      color: var(--text);
+      flex: 1;
+    }
+
+    .command .url {
+      color: var(--accent);
+    }
+
+    .copy-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .copy-btn.copied {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* CTA Buttons */
+    .cta-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Features */
+    .features {
+      padding: 100px 24px;
+      background: white;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      text-align: center;
+      margin-bottom: 60px;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      transition: all 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-light);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .feature-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .feature-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Install Methods */
+    .install-methods {
+      padding: 100px 24px;
+      background: var(--bg);
+    }
+
+    .methods-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .method-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .method-card:hover {
+      border-color: var(--accent);
+    }
+
+    .method-name {
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .method-cmd {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+    }
+
+    /* Footer */
+    footer {
+      padding: 50px 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      background: white;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 20px;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent);
+    }
+
+    .footer-version {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Animations */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .hero {
+        padding: 60px 20px;
+      }
+
+      .command-line {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .copy-btn {
+        width: 100%;
+      }
+
+      .cta-group {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .btn {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <h1 class="logo fade-in">Apollo</h1>
+    <p class="tagline fade-in delay-1">
+      The AI coding agent built for the terminal.
+    </p>
+
+    <div class="install-box fade-in delay-2">
+      <div class="terminal-header">
+        <div class="terminal-dot red"></div>
+        <div class="terminal-dot yellow"></div>
+        <div class="terminal-dot green"></div>
+        <span class="terminal-title">terminal</span>
+      </div>
+      <div class="terminal-body">
+        <div class="command-line">
+          <span class="prompt">$</span>
+          <span class="command">curl -fsSL <span class="url">https://github.com/i-luv-pho/apollov2</span> | bash</span>
+          <button class="copy-btn" onclick="copyCommand(this)">copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-group fade-in delay-3">
+      <a href="https://github.com/i-luv-pho/apollov2" class="btn btn-primary">Get Started</a>
+      <a href="https://github.com/i-luv-pho/apollov2" class="btn btn-secondary">GitHub</a>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2 class="section-title">Features</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">Native TUI</h3>
+        <p class="feature-desc">A responsive, themeable terminal interface that feels natural.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔌</div>
+        <h3 class="feature-title">LSP Enabled</h3>
+        <p class="feature-desc">Automatically loads language servers for intelligent assistance.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🚀</div>
+        <h3 class="feature-title">Multi-Session</h3>
+        <p class="feature-desc">Run multiple agents in parallel on the same project.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔗</div>
+        <h3 class="feature-title">Shareable</h3>
+        <p class="feature-desc">Share any session with a link for debugging or reference.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3 class="feature-title">75+ Providers</h3>
+        <p class="feature-desc">Works with all major LLM providers including local models.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3 class="feature-title">Your Keys</h3>
+        <p class="feature-desc">Use your own API keys or subscriptions. No middleman.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="install-methods">
+    <h2 class="section-title">Install</h2>
+    <div class="methods-grid">
+      <div class="method-card" onclick="copyMethod('npm install -g apollo')">
+        <div class="method-name">npm</div>
+        <div class="method-cmd">npm install -g apollo</div>
+      </div>
+      <div class="method-card" onclick="copyMethod('bun install -g apollo')">
+        <div class="method-name">Bun</div>
+        <div class="method-cmd">bun install -g apollo</div>
+      </div>
+      <div class="method-card" onclick="copyMethod('brew install i-luv-pho/tap/apollo')">
+        <div class="method-name">Homebrew</div>
+        <div class="method-cmd">brew install i-luv-pho/tap/apollo</div>
+      </div>
+      <div class="method-card" onclick="copyMethod('mise use -g github:i-luv-pho/apollov2')">
+        <div class="method-name">Mise</div>
+        <div class="method-cmd">mise use -g github:i-luv-pho/apollov2</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-links">
+      <a href="https://github.com/i-luv-pho/apollov2">GitHub</a>
+      <a href="https://github.com/i-luv-pho/apollov2#readme">Docs</a>
+      <a href="https://github.com/i-luv-pho/apollov2/issues">Issues</a>
+    </div>
+    <div class="footer-version">v1.0.12</div>
+  </footer>
+
+  <script>
+    function copyCommand(btn) {
+      const cmd = 'curl -fsSL https://github.com/i-luv-pho/apollov2 | bash';
+      navigator.clipboard.writeText(cmd);
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
+    function copyMethod(cmd) {
+      navigator.clipboard.writeText(cmd);
+      const card = event.target.closest('.method-card');
+      card.style.borderColor = 'var(--accent)';
+      card.style.background = 'var(--accent-light)';
+      setTimeout(() => {
+        card.style.borderColor = '';
+        card.style.background = '';
+      }, 500);
+    }
+  </script>
+</body>
+</html>

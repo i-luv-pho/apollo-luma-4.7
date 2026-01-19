@@ -1,0 +1,90 @@
+Runs and manages long-running background tasks.
+
+Actions:
+
+start - Start a background task
+```
+action: "start"
+command: "npm run dev"
+name: "Dev Server"
+cwd: "/path/to/project"
+```
+
+list - List all background tasks
+```
+action: "list"
+```
+
+status - Get task status
+```
+action: "status"
+taskId: "task_123456_abc123"
+```
+
+logs - View task output
+```
+action: "logs"
+taskId: "task_123456_abc123"
+lines: 100
+```
+
+stop - Stop a running task
+```
+action: "stop"
+taskId: "task_123456_abc123"
+```
+
+cleanup - Remove old completed tasks
+```
+action: "cleanup"
+```
+
+Usage examples:
+
+Start a development server:
+```
+action: "start"
+command: "npm run dev"
+name: "Next.js Dev"
+```
+
+Run a build in background:
+```
+action: "start"
+command: "npm run build"
+name: "Production Build"
+```
+
+Start with environment variables:
+```
+action: "start"
+command: "python train.py"
+name: "ML Training"
+env: { "CUDA_VISIBLE_DEVICES": "0" }
+```
+
+Monitor a task:
+```
+1. Start task
+2. Wait for processing
+3. Get logs to check progress
+4. Stop when done
+```
+
+Features:
+- Tasks persist across Apollo sessions (metadata stored in ~/.local/share/apollo/tasks/)
+- Logs are captured to files and can be retrieved anytime
+- Process trees are properly cleaned up on stop
+- Old completed tasks are automatically cleaned up after 7 days
+
+Task status values:
+- running: Task is currently executing
+- completed: Task finished successfully (exit code 0)
+- failed: Task finished with error (non-zero exit code)
+- stopped: Task was manually stopped
+
+Notes:
+- Tasks run detached from the Apollo process
+- Use descriptive names for easier identification
+- Check logs regularly for long-running tasks
+- Stop tasks gracefully - they receive SIGTERM then SIGKILL

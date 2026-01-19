@@ -1,0 +1,72 @@
+Manages cloud infrastructure on AWS, GCP, and Azure.
+
+AWS S3 (Object Storage):
+```
+provider: "aws", service: "s3", action: "list-buckets"
+provider: "aws", service: "s3", action: "list", bucket: "my-bucket", prefix: "data/"
+provider: "aws", service: "s3", action: "get", bucket: "my-bucket", key: "file.txt"
+provider: "aws", service: "s3", action: "put", bucket: "my-bucket", key: "file.txt", body: "content"
+provider: "aws", service: "s3", action: "delete", bucket: "my-bucket", key: "file.txt"
+```
+
+AWS EC2 (Compute):
+```
+provider: "aws", service: "ec2", action: "list"
+provider: "aws", service: "ec2", action: "describe", instanceId: "i-1234567890abcdef0"
+provider: "aws", service: "ec2", action: "start", instanceId: "i-1234567890abcdef0"
+provider: "aws", service: "ec2", action: "stop", instanceId: "i-1234567890abcdef0"
+```
+
+AWS Lambda (Serverless):
+```
+provider: "aws", service: "lambda", action: "list"
+provider: "aws", service: "lambda", action: "describe", functionName: "my-function"
+provider: "aws", service: "lambda", action: "invoke", functionName: "my-function", payload: { "key": "value" }
+```
+
+GCP Storage:
+```
+provider: "gcp", service: "storage", action: "list-buckets"
+provider: "gcp", service: "storage", action: "list", bucket: "my-bucket"
+provider: "gcp", service: "storage", action: "get", bucket: "my-bucket", object: "file.txt"
+provider: "gcp", service: "storage", action: "put", bucket: "my-bucket", object: "file.txt", content: "data"
+provider: "gcp", service: "storage", action: "delete", bucket: "my-bucket", object: "file.txt"
+```
+
+Authentication:
+
+AWS credentials are loaded from:
+1. Stored credential (credentialName parameter)
+2. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+3. AWS credentials file (~/.aws/credentials)
+4. IAM instance role
+
+GCP credentials are loaded from:
+1. GOOGLE_APPLICATION_CREDENTIALS environment variable
+2. Default application credentials (gcloud auth application-default login)
+3. Service account attached to compute instance
+
+Storing AWS credentials:
+```
+# Use the credentials tool to store AWS keys
+credential name: "aws-prod"
+type: "aws"
+accessKeyId: "AKIA..."
+secretAccessKey: "..."
+region: "us-east-1"
+```
+
+Permission levels:
+- cloud: Read-only operations (list, get, describe)
+- cloud_write: Modify operations (put, start, stop, invoke)
+- cloud_delete: Destructive operations (delete, terminate)
+
+Required packages:
+- AWS: @aws-sdk/client-s3, @aws-sdk/client-ec2, @aws-sdk/client-lambda
+- GCP: @google-cloud/storage
+
+Notes:
+- Azure support coming soon
+- Use region parameter to specify AWS region (default: us-east-1)
+- GCP uses default project from credentials
+- All operations respect IAM permissions

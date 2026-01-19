@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+  <!-- Apollo "A" mark - minimal geometric design -->
+  <path d="M256 80L400 432H336L304 352H208L176 432H112L256 80Z" fill="#00ff41"/>
+  <path d="M224 288H288L256 208L224 288Z" fill="#0a0a0a"/>
+</svg>

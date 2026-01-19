@@ -1,0 +1,81 @@
+Makes HTTP requests to APIs and web services.
+
+Usage:
+- Use this tool to interact with REST APIs, webhooks, and web services
+- Supports all HTTP methods: GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+- Can handle JSON, form data, multipart uploads, and raw text bodies
+- Supports multiple authentication methods
+- Can download files by specifying a saveTo path
+
+Examples:
+
+Simple GET request:
+```
+method: "GET"
+url: "https://api.github.com/users/octocat"
+```
+
+POST with JSON body:
+```
+method: "POST"
+url: "https://api.example.com/data"
+body: { "name": "test", "value": 123 }
+```
+
+With Bearer authentication:
+```
+method: "GET"
+url: "https://api.example.com/protected"
+auth: { type: "bearer", token: "your-token-here" }
+```
+
+With Basic authentication:
+```
+method: "GET"
+url: "https://api.example.com/protected"
+auth: { type: "basic", username: "user", password: "pass" }
+```
+
+Using stored credentials:
+```
+method: "GET"
+url: "https://api.example.com/protected"
+auth: { type: "credential", credentialName: "my-api" }
+```
+
+Form data POST:
+```
+method: "POST"
+url: "https://api.example.com/login"
+body: { "username": "user", "password": "pass" }
+bodyType: "form"
+```
+
+Download a file:
+```
+method: "GET"
+url: "https://example.com/file.pdf"
+saveTo: "downloads/file.pdf"
+```
+
+Custom headers:
+```
+method: "POST"
+url: "https://api.example.com/webhook"
+headers: { "X-Custom-Header": "value" }
+body: { "event": "test" }
+```
+
+Authentication types:
+- bearer: Token-based authentication (Authorization: Bearer <token>)
+- basic: Username/password (Authorization: Basic base64(user:pass))
+- api-key: API key in custom header (default: X-API-Key)
+- oauth2: OAuth2 access token (same as bearer)
+- credential: Use a stored credential by name
+
+Notes:
+- Default timeout is 30 seconds (max 5 minutes)
+- Response bodies larger than 10MB will be rejected
+- Binary responses (images, PDFs, etc.) are not displayed inline
+- Use saveTo to download files to disk
+- Redirects are followed by default (set followRedirects: false to disable)
