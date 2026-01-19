@@ -9,6 +9,7 @@ import { Log } from "@/util/log"
 import { withNetworkOptions, resolveNetworkOptions } from "@/cli/network"
 import type { Event } from "@apollo-ai/sdk/v2"
 import type { EventSource } from "./context/sdk"
+import { validateApiKey } from "@/deck/supabase"
 
 declare global {
   const APOLLO_WORKER_PATH: string
@@ -73,6 +74,28 @@ export const TuiThreadCommand = cmd({
         describe: "agent to use",
       }),
   handler: async (args) => {
+    // Check API key first
+    const apiKey = process.env.APOLLO_API_KEY
+    if (!apiKey) {
+      UI.error("API key required")
+      UI.println()
+      UI.println("Set your API key to use Apollo:")
+      UI.println(UI.Style.TEXT_INFO_BOLD + "  export APOLLO_API_KEY=sk_xxxxx" + UI.Style.TEXT_NORMAL)
+      UI.println()
+      UI.println(UI.Style.TEXT_DIM + "Get an API key from the Apollo admin." + UI.Style.TEXT_NORMAL)
+      process.exit(1)
+    }
+
+    // Validate API key
+    const validation = await validateApiKey(apiKey)
+    if (!validation.valid) {
+      UI.error(validation.error || "Invalid API key")
+      process.exit(1)
+    }
+
+    UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` API key valid (${validation.data!.decks_used}/${validation.data!.decks_limit} decks used)`)
+    UI.println()
+
     // Resolve relative paths against PWD to preserve behavior when using --cwd flag
     const baseCwd = process.env.PWD ?? process.cwd()
     const cwd = args.project ? path.resolve(baseCwd, args.project) : process.cwd()
