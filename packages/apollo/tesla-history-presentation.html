@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The History of Tesla</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f5f5;
+        color: #000;
+      }
+      .slide {
+        width: 1280px;
+        height: 720px;
+        background: #fff;
+        margin: 40px auto;
+        padding: 80px;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .slide.active {
+        display: flex;
+      }
+      h1,
+      h2 {
+        font-family: "Fraunces", serif;
+        color: #000;
+        font-weight: 600;
+      }
+      h1 {
+        font-size: 64px;
+        margin-bottom: 24px;
+      }
+      h2 {
+        font-size: 48px;
+        margin-bottom: 40px;
+      }
+      p {
+        font-size: 28px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+      }
+      ul {
+        list-style: none;
+      }
+      li {
+        font-size: 26px;
+        line-height: 1.5;
+        margin-bottom: 18px;
+      }
+      li::before {
+        content: "—";
+        margin-right: 16px;
+        color: #000;
+      }
+      .subtitle {
+        font-size: 32px;
+        color: #666;
+      }
+      .tagline {
+        font-size: 24px;
+        color: #666;
+        margin-top: 40px;
+        font-style: italic;
+      }
+      .nav {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .nav button {
+        padding: 12px 24px;
+        background: #000;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-family: "Inter", sans-serif;
+        font-size: 16px;
+      }
+      .nav button:hover {
+        background: #333;
+      }
+      #counter {
+        font-size: 18px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Slide 1: Title -->
+    <div class="slide active">
+      <h1>The History of Tesla</h1>
+      <p class="subtitle">From Silicon Valley Startup to Global EV Leader</p>
+      <p class="tagline">"Accelerating the world's transition to sustainable energy"</p>
+    </div>
+
+    <!-- Slide 2: Key Milestones -->
+    <div class="slide">
+      <h2>Key Milestones</h2>
+      <ul>
+        <li><strong>2003</strong> — Founded by Martin Eberhard & Marc Tarpenning in San Carlos, CA</li>
+        <li><strong>2004</strong> — Elon Musk invests $6.5M, becomes Chairman & largest shareholder</li>
+        <li><strong>2008</strong> — Tesla Roadster launches — first highway-legal EV with Li-ion battery</li>
+        <li><strong>2010</strong> — IPO on NASDAQ, first U.S. automaker IPO since Ford in 1956</li>
+        <li><strong>2012</strong> — Model S debuts, redefining the luxury EV sedan market</li>
+        <li><strong>2017</strong> — Model 3 mass production begins, democratizing electric vehicles</li>
+        <li><strong>2024</strong> — Annual revenue reaches $97.69B, 50%+ U.S. EV market share</li>
+      </ul>
+    </div>
+
+    <div class="nav">
+      <button onclick="prev()">← Prev</button>
+      <span id="counter">1 / 2</span>
+      <button onclick="next()">Next →</button>
+    </div>
+
+    <script>
+      let current = 0
+      const slides = document.querySelectorAll(".slide")
+      const total = slides.length
+
+      function show(index) {
+        slides.forEach((s) => s.classList.remove("active"))
+        slides[index].classList.add("active")
+        document.getElementById("counter").textContent = index + 1 + " / " + total
+      }
+
+      function next() {
+        if (current < total - 1) {
+          current++
+          show(current)
+        }
+      }
+
+      function prev() {
+        if (current > 0) {
+          current--
+          show(current)
+        }
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " ") next()
+        if (e.key === "ArrowLeft") prev()
+      })
+    </script>
+  </body>
+</html>

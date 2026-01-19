@@ -288,6 +288,168 @@
         border-radius: 4px;
         z-index: 100;
       }
+
+      /* Fade Transitions */
+      .slide {
+        opacity: 0;
+        transition: opacity 0.8s ease-out;
+      }
+
+      .slide.visible {
+        opacity: 1;
+      }
+
+      .slide h1,
+      .slide h2,
+      .slide h3,
+      .slide p,
+      .slide .subtitle,
+      .slide .meta,
+      .slide .stats-grid,
+      .slide .two-column,
+      .slide .timeline,
+      .slide .quote,
+      .slide .stat-box,
+      .slide li {
+        opacity: 0;
+        transform: translateY(30px);
+        transition:
+          opacity 0.6s ease-out,
+          transform 0.6s ease-out;
+      }
+
+      .slide.visible h1 {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.1s;
+      }
+      .slide.visible h2 {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.15s;
+      }
+      .slide.visible .subtitle {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.25s;
+      }
+      .slide.visible .meta {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.35s;
+      }
+      .slide.visible p {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.2s;
+      }
+      .slide.visible h3 {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.25s;
+      }
+
+      .slide.visible .stats-grid {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.3s;
+      }
+      .slide.visible .stat-box:nth-child(1) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.35s;
+      }
+      .slide.visible .stat-box:nth-child(2) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.45s;
+      }
+      .slide.visible .stat-box:nth-child(3) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.55s;
+      }
+      .slide.visible .stat-box:nth-child(4) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.65s;
+      }
+
+      .slide.visible .two-column {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.25s;
+      }
+      .slide.visible .timeline {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.3s;
+      }
+      .slide.visible .quote {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.3s;
+      }
+
+      .slide.visible li:nth-child(1) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.3s;
+      }
+      .slide.visible li:nth-child(2) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.4s;
+      }
+      .slide.visible li:nth-child(3) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.5s;
+      }
+      .slide.visible li:nth-child(4) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.6s;
+      }
+      .slide.visible li:nth-child(5) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.7s;
+      }
+
+      .timeline-item {
+        opacity: 0;
+        transform: translateY(20px);
+        transition:
+          opacity 0.5s ease-out,
+          transform 0.5s ease-out;
+      }
+
+      .slide.visible .timeline-item:nth-child(1) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.4s;
+      }
+      .slide.visible .timeline-item:nth-child(2) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.55s;
+      }
+      .slide.visible .timeline-item:nth-child(3) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.7s;
+      }
+      .slide.visible .timeline-item:nth-child(4) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 0.85s;
+      }
+      .slide.visible .timeline-item:nth-child(5) {
+        opacity: 1;
+        transform: translateY(0);
+        transition-delay: 1s;
+      }
     </style>
   </head>
   <body>
@@ -491,19 +653,27 @@
         }
       })
 
-      // Update current slide on scroll
+      // Update current slide on scroll and trigger fade animations
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               currentSlide = Array.from(slides).indexOf(entry.target)
+              entry.target.classList.add("visible")
+            } else {
+              entry.target.classList.remove("visible")
             }
           })
         },
-        { threshold: 0.5 },
+        { threshold: 0.3 },
       )
 
       slides.forEach((slide) => observer.observe(slide))
+
+      // Trigger first slide animation on load
+      setTimeout(() => {
+        slides[0].classList.add("visible")
+      }, 100)
     </script>
   </body>
 </html>
