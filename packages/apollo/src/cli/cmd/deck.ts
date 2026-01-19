@@ -1257,15 +1257,25 @@ export const DeckCommand = cmd({
 
     // Check license
     const license = getLicense()
-    if (!license || license.decks_remaining <= 0) {
-      UI.error("No decks remaining")
+    if (!license) {
+      const raw = getLicenseRaw()
+      if (raw && isExpired()) {
+        UI.error("License expired")
+        UI.println()
+        UI.println("Your license expired on " + new Date(raw.expires_at).toLocaleDateString())
+      } else if (raw && raw.decks_remaining <= 0) {
+        UI.error("No decks remaining")
+      } else {
+        UI.error("No license")
+      }
       UI.println()
-      UI.println("Get a license code and run:")
+      UI.println("Get a new license code and run:")
       UI.println("  apollo activate APOLLO-XXXX-XX-XXXX")
       process.exit(1)
     }
 
-    UI.println(UI.Style.TEXT_DIM + `License: ${license.decks_remaining} decks remaining` + UI.Style.TEXT_NORMAL)
+    const expiresDate = new Date(license.expires_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    UI.println(UI.Style.TEXT_DIM + `License: ${license.decks_remaining} decks remaining (expires ${expiresDate})` + UI.Style.TEXT_NORMAL)
 
     UI.println()
     UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
