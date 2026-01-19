@@ -1235,6 +1235,71 @@ export const DeckCommand = cmd({
     UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
     UI.println()
 
+    // Process PDF file if provided
+    let documentContext = ""
+    let pdfAttachment: { path: string; pages: number } | null = null
+
+    if (args.file) {
+      const filePath = path.resolve(args.file)
+
+      // Validate file exists
+      if (!fs.existsSync(filePath)) {
+        UI.error(`File not found: ${filePath}`)
+        process.exit(1)
+      }
+
+      // Validate file is PDF
+      const ext = path.extname(filePath).toLowerCase()
+      if (ext !== ".pdf") {
+        UI.error("Only PDF files are supported. Use: apollo deck --file document.pdf \"topic\"")
+        process.exit(1)
+      }
+
+      UI.println(UI.Style.TEXT_DIM + "Reading PDF..." + UI.Style.TEXT_NORMAL)
+
+      try {
+        const { text, pages, metadata } = await extractPDF(filePath)
+
+        // Check for scanned PDF
+        if (isScannedPDF(text, pages)) {
+          UI.error("PDF appears to be scanned/image-based. Please use a text-based PDF.")
+          process.exit(1)
+        }
+
+        if (!text.trim()) {
+          UI.error("PDF contains no extractable text.")
+          process.exit(1)
+        }
+
+        UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` PDF loaded: ${pages} pages`)
+
+        if (pages <= 50) {
+          // Small PDF: pass directly to Claude
+          pdfAttachment = { path: filePath, pages }
+          UI.println(UI.Style.TEXT_DIM + "Mode: Direct PDF processing" + UI.Style.TEXT_NORMAL)
+        } else {
+          // Large PDF: chunk and summarize
+          UI.println(UI.Style.TEXT_DIM + `Mode: Chunked processing (${pages} pages)` + UI.Style.TEXT_NORMAL)
+
+          const chunks = chunkText(text)
+          UI.println(UI.Style.TEXT_DIM + `Processing ${chunks.length} sections...` + UI.Style.TEXT_NORMAL)
+
+          const summary = await summarizeDocument(chunks, (msg) => {
+            UI.println(UI.Style.TEXT_DIM + msg + UI.Style.TEXT_NORMAL)
+          })
+
+          documentContext = `\n\n--- DOCUMENT SUMMARY ---\nSource: ${metadata.title || path.basename(filePath)}\nPages: ${pages}\n\n${summary}\n--- END DOCUMENT ---\n`
+
+          UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + " Document processed")
+        }
+      } catch (error) {
+        UI.error(`Failed to read PDF: ${error instanceof Error ? error.message : String(error)}`)
+        process.exit(1)
+      }
+
+      UI.println()
+    }
+
     // Create deck directory
     const deckId = getNextDeckId()
     const slug = slugify(topic)
@@ -1429,14 +1494,14 @@ export const DeckCommand = cmd({
       })()
 
       // Send the prompt
-      const prompt = `Create a ${args.slides}-slide pitch deck about: "${topic}"
+      const basePrompt = `Create a ${args.slides}-slide pitch deck about: "${topic}"
 
 This is for a student at Assumption University Thailand. The presentation should be:
 - Academic quality with real research
 - Professional and credible
 - Black and white design only
-
-Use web search to find real statistics, market data, and relevant information.
+${documentContext ? "\nUse the document summary provided below as the primary source. You may supplement with web search for additional data." : "\nUse web search to find real statistics, market data, and relevant information."}
+${pdfAttachment ? "\nA PDF document has been attached. Use its content as the primary source for the deck." : ""}
 
 Return ONLY a JSON object with this exact structure:
 {
@@ -1464,12 +1529,28 @@ Make sure each slide HTML uses:
 - ul/li for bullet points
 - .sources for citations at the bottom
 
-Research thoroughly before generating. Include real data.`
+Research thoroughly before generating. Include real data.${documentContext}`
+
+      // Build prompt parts
+      const promptParts: Array<{ type: "text"; text: string } | { type: "file"; url: string; mime: string; filename: string }> = []
+
+      // Add PDF attachment for small PDFs
+      if (pdfAttachment) {
+        promptParts.push({
+          type: "file",
+          url: `file://${pdfAttachment.path}`,
+          mime: "application/pdf",
+          filename: path.basename(pdfAttachment.path),
+        })
+      }
+
+      // Add the text prompt
+      promptParts.push({ type: "text", text: basePrompt })
 
       await sdk.session.prompt({
         sessionID,
         // Uses main Apollo system prompt (anthropic.txt) - no duplicate system prompt
-        parts: [{ type: "text", text: prompt }],
+        parts: promptParts,
       })
 
       await eventProcessor

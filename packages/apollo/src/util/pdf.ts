@@ -1,6 +1,5 @@
 import fs from "fs"
-// @ts-ignore - pdf-parse types
-import pdf from "pdf-parse"
+import { extractText, getDocumentProxy } from "unpdf"
 
 export interface PDFResult {
   text: string
@@ -14,16 +13,34 @@ export interface PDFResult {
 
 export async function extractPDF(filePath: string): Promise<PDFResult> {
   const buffer = fs.readFileSync(filePath)
-  const data = await pdf(buffer)
+  const uint8Array = new Uint8Array(buffer)
+
+  // Get document info
+  const doc = await getDocumentProxy(uint8Array)
+  const numPages = doc.numPages
+
+  // Extract text
+  const { text } = await extractText(uint8Array, { mergePages: false })
+  const fullText = Array.isArray(text) ? text.join("\n\n") : text
+
+  // Get metadata
+  let metadata: PDFResult["metadata"] = {}
+  try {
+    const meta = await doc.getMetadata()
+    const info = meta?.info as any
+    metadata = {
+      title: info?.Title,
+      author: info?.Author,
+      creator: info?.Creator,
+    }
+  } catch {
+    // Metadata extraction failed, continue with empty metadata
+  }
 
   return {
-    text: data.text,
-    pages: data.numpages,
-    metadata: {
-      title: data.info?.Title,
-      author: data.info?.Author,
-      creator: data.info?.Creator,
-    },
+    text: fullText,
+    pages: numPages,
+    metadata,
   }
 }
 
@@ -38,7 +55,7 @@ export function chunkText(text: string, maxTokens: number = 4000): string[] {
     const trimmed = para.trim()
     if (!trimmed) continue
 
-    if ((current.length + trimmed.length + 2) > maxChars) {
+    if (current.length + trimmed.length + 2 > maxChars) {
       if (current) {
         chunks.push(current.trim())
       }
@@ -47,7 +64,7 @@ export function chunkText(text: string, maxTokens: number = 4000): string[] {
         const sentences = trimmed.split(/(?<=[.!?])\s+/)
         let sentenceChunk = ""
         for (const sentence of sentences) {
-          if ((sentenceChunk.length + sentence.length + 1) > maxChars) {
+          if (sentenceChunk.length + sentence.length + 1 > maxChars) {
             if (sentenceChunk) chunks.push(sentenceChunk.trim())
             sentenceChunk = sentence
           } else {

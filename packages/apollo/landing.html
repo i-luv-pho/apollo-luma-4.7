@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apollo — AI Slide Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #ffffff;
+      color: #000000;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+    }
+
+    .container {
+      max-width: 640px;
+      width: 100%;
+    }
+
+    h1 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 48px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: #666;
+      margin-bottom: 48px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      margin-bottom: 64px;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #999;
+    }
+
+    .code-block {
+      background: #000;
+      color: #fff;
+      padding: 20px 24px;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .code-block:hover {
+      background: #222;
+    }
+
+    .code-block:active {
+      background: #333;
+    }
+
+    .code-block code {
+      flex: 1;
+      overflow-x: auto;
+    }
+
+    .copy-hint {
+      font-size: 12px;
+      color: #666;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+
+    .code-block:hover .copy-hint {
+      color: #999;
+    }
+
+    .code-block.copied .copy-hint {
+      color: #fff;
+    }
+
+    .step-note {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .step-note a {
+      color: #000;
+      text-decoration: underline;
+    }
+
+    .divider {
+      width: 40px;
+      height: 1px;
+      background: #e0e0e0;
+      margin: 16px 0;
+    }
+
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .feature {
+      font-size: 15px;
+      color: #666;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .feature::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: #ccc;
+    }
+
+    footer {
+      margin-top: 64px;
+      font-size: 13px;
+      color: #999;
+    }
+
+    footer a {
+      color: #666;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: #000;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 36px; }
+      .subtitle { font-size: 17px; }
+      .code-block { font-size: 13px; padding: 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Apollo</h1>
+    <p class="subtitle">AI-powered slides from a single prompt</p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="step-label">1. Install</span>
+        <div class="code-block" onclick="copyCode(this, 'brew install apolloai/tap/apollo')">
+          <code>brew install apolloai/tap/apollo</code>
+          <span class="copy-hint">Click to copy</span>
+        </div>
+        <p class="step-note">Requires <a href="https://brew.sh" target="_blank">Homebrew</a></p>
+      </div>
+
+      <div class="step">
+        <span class="step-label">2. Authenticate</span>
+        <div class="code-block" onclick="copyCode(this, 'apollo auth')">
+          <code>apollo auth</code>
+          <span class="copy-hint">Click to copy</span>
+        </div>
+        <p class="step-note">Get an API key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+      </div>
+
+      <div class="step">
+        <span class="step-label">3. Create a deck</span>
+        <div class="code-block" onclick="copyCode(this, 'apollo deck &quot;Series A pitch for an AI tutoring startup&quot;')">
+          <code>apollo deck "Series A pitch for an AI tutoring startup"</code>
+          <span class="copy-hint">Click to copy</span>
+        </div>
+        <p class="step-note">Opens in browser with PNG, PPTX, PDF export</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="features">
+      <p class="feature">Research-backed slides with real statistics</p>
+      <p class="feature">Agency-quality design in 60 seconds</p>
+      <p class="feature">Export to PowerPoint, PNG, or PDF</p>
+      <p class="feature">Runs locally, your data stays private</p>
+    </div>
+
+    <footer>
+      <a href="https://github.com/apolloai/apollo">GitHub</a>
+    </footer>
+  </div>
+
+  <script>
+    function copyCode(el, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const hint = el.querySelector('.copy-hint');
+        const original = hint.textContent;
+        hint.textContent = 'Copied!';
+        el.classList.add('copied');
+        setTimeout(() => {
+          hint.textContent = original;
+          el.classList.remove('copied');
+        }, 1500);
+      });
+    }
+  </script>
+</body>
+</html>
