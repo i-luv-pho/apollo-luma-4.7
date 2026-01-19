@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { randomBytes } from 'crypto'
 
 const supabaseUrl = 'https://advpygqokfxmomlumkgl.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg'
@@ -20,10 +19,9 @@ export interface AccessKey {
 // Generate a new access key
 export function generateAccessKey(): string {
   const chars = 'abcdef0123456789'
-  const bytes = randomBytes(32)
   let result = 'sk_'
-  for (let i = 0; i < 32; i++) {
-    result += chars[bytes[i] % chars.length]
+  for (let i = 0; i < 48; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)]
   }
   return result
 }
