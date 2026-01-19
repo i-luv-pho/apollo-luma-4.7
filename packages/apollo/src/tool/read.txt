@@ -10,3 +10,16 @@ Usage:
 - You have the capability to call multiple tools in a single response. It is always better to speculatively read multiple files as a batch that are potentially useful.
 - If you read a file that exists but has empty contents you will receive a system reminder warning in place of file contents.
 - You can read image files using this tool.
+
+## When to Use Read vs Other Tools
+- Read: When you know the exact file path and want full content
+- Grep: When searching for specific content across many files
+- Glob: When finding files by name pattern
+
+## Large Files
+- Use offset and limit for files over 2000 lines
+- Read in chunks: start with first 500 lines, then offset as needed
+- Check file size first if unsure: use Bash with `wc -l`
+
+## Before Editing
+Always read a file before using Edit tool - this is required and ensures you have the current content to match against.

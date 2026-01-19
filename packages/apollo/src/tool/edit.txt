@@ -1,10 +1,25 @@
-Performs exact string replacements in files. 
+Performs exact string replacements in files.
 
 Usage:
-- You must use your `Read` tool at least once in the conversation before editing. This tool will error if you attempt an edit without reading the file. 
+- You must use your `Read` tool at least once in the conversation before editing. This tool will error if you attempt an edit without reading the file.
 - When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in the oldString or newString.
 - ALWAYS prefer editing existing files in the codebase. NEVER write new files unless explicitly required.
 - Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.
 - The edit will FAIL if `oldString` is not found in the file with an error "oldString not found in content".
-- The edit will FAIL if `oldString` is found multiple times in the file with an error "oldString found multiple times and requires more code context to uniquely identify the intended match". Either provide a larger string with more surrounding context to make it unique or use `replaceAll` to change every instance of `oldString`. 
+- The edit will FAIL if `oldString` is found multiple times in the file with an error "oldString found multiple times and requires more code context to uniquely identify the intended match". Either provide a larger string with more surrounding context to make it unique or use `replaceAll` to change every instance of `oldString`.
 - Use `replaceAll` for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance.
+
+## Best Practices
+- Make minimal changes - don't refactor unrelated code
+- Preserve existing code style (indentation, quotes, semicolons)
+- Test your change mentally before applying
+
+## Common Patterns
+- Adding imports: Include the full import block as context, add new line
+- Fixing bugs: Replace only the buggy code, keep surrounding context
+- Renaming: Use replaceAll for consistent renames across the file
+
+## Avoiding Errors
+- "oldString not found": Check exact whitespace and indentation from Read output
+- "multiple matches": Add more surrounding lines to make the match unique
+- Wrong edit applied: Read the file again to verify current state
