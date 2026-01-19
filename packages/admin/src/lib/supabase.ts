@@ -29,7 +29,7 @@ export function generateAccessKey(): string {
 // Access Key operations
 export async function getAccessKeys(): Promise<AccessKey[]> {
   const { data, error } = await supabase
-    .from('deck_access_keys')
+    .from('deck_api_keys')
     .select('*')
     .order('created_at', { ascending: false })
 
@@ -41,7 +41,7 @@ export async function createAccessKey(name: string, decksLimit: number): Promise
   const key = generateAccessKey()
 
   const { data, error } = await supabase
-    .from('deck_access_keys')
+    .from('deck_api_keys')
     .insert({ key, name, decks_limit: decksLimit })
     .select()
     .single()
@@ -52,7 +52,7 @@ export async function createAccessKey(name: string, decksLimit: number): Promise
 
 export async function toggleAccessKey(id: string, active: boolean): Promise<void> {
   const { error } = await supabase
-    .from('deck_access_keys')
+    .from('deck_api_keys')
     .update({ active })
     .eq('id', id)
 
@@ -61,7 +61,7 @@ export async function toggleAccessKey(id: string, active: boolean): Promise<void
 
 export async function deleteAccessKey(id: string): Promise<void> {
   const { error } = await supabase
-    .from('deck_access_keys')
+    .from('deck_api_keys')
     .delete()
     .eq('id', id)
 
@@ -70,7 +70,7 @@ export async function deleteAccessKey(id: string): Promise<void> {
 
 export async function validateAccessKey(key: string): Promise<AccessKey | null> {
   const { data, error } = await supabase
-    .from('deck_access_keys')
+    .from('deck_api_keys')
     .select('*')
     .eq('key', key)
     .eq('active', true)
@@ -97,7 +97,7 @@ export async function incrementUsage(key: string): Promise<void> {
   // Fallback if RPC doesn't exist
   if (error) {
     await supabase
-      .from('deck_access_keys')
+      .from('deck_api_keys')
       .update({ decks_used: supabase.rpc('', {}) })
       .eq('key', key)
   }
