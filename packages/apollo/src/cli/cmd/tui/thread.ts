@@ -3,6 +3,7 @@ import { tui } from "./app"
 import { Rpc } from "@/util/rpc"
 import { type rpc } from "./worker"
 import path from "path"
+import fs from "fs"
 import { UI } from "@/cli/ui"
 import { iife } from "@/util/iife"
 import { Log } from "@/util/log"
@@ -10,6 +11,52 @@ import { withNetworkOptions, resolveNetworkOptions } from "@/cli/network"
 import type { Event } from "@apollo-ai/sdk/v2"
 import type { EventSource } from "./context/sdk"
 import { validateApiKey } from "@/deck/supabase"
+
+// API key storage
+const CONFIG_DIR = path.join(process.env.HOME || "~", ".apollo")
+const CONFIG_FILE = path.join(CONFIG_DIR, "config.json")
+const KEY_EXPIRY_DAYS = 30
+
+interface Config {
+  apiKey?: string
+  apiKeySetAt?: number
+}
+
+function loadConfig(): Config {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"))
+    }
+  } catch {}
+  return {}
+}
+
+function saveConfig(config: Config) {
+  if (!fs.existsSync(CONFIG_DIR)) {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true })
+  }
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2))
+}
+
+function isKeyExpired(setAt: number): boolean {
+  const expiryMs = KEY_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+  return Date.now() - setAt > expiryMs
+}
+
+async function promptForKey(): Promise<string> {
+  const readline = await import("readline")
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+
+  return new Promise((resolve) => {
+    rl.question("Paste your API key: ", (answer) => {
+      rl.close()
+      resolve(answer.trim())
+    })
+  })
+}
 
 declare global {
   const APOLLO_WORKER_PATH: string
@@ -74,16 +121,31 @@ export const TuiThreadCommand = cmd({
         describe: "agent to use",
       }),
   handler: async (args) => {
-    // Check API key first
-    const apiKey = process.env.APOLLO_API_KEY
+    // Get API key - check env, then saved config, then prompt
+    let apiKey = process.env.APOLLO_API_KEY
+    const config = loadConfig()
+
+    // Check saved key
+    if (!apiKey && config.apiKey && config.apiKeySetAt) {
+      if (isKeyExpired(config.apiKeySetAt)) {
+        UI.println(UI.Style.TEXT_DIM + "API key expired. Please enter a new one." + UI.Style.TEXT_NORMAL)
+        UI.println()
+      } else {
+        apiKey = config.apiKey
+      }
+    }
+
+    // Prompt for key if needed
     if (!apiKey) {
-      UI.error("API key required")
       UI.println()
-      UI.println("Set your API key to use Apollo:")
-      UI.println(UI.Style.TEXT_INFO_BOLD + "  export APOLLO_API_KEY=sk_xxxxx" + UI.Style.TEXT_NORMAL)
+      UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "First time setup" + UI.Style.TEXT_NORMAL)
       UI.println()
-      UI.println(UI.Style.TEXT_DIM + "Get an API key from the Apollo admin." + UI.Style.TEXT_NORMAL)
-      process.exit(1)
+      apiKey = await promptForKey()
+
+      if (!apiKey) {
+        UI.error("No API key provided")
+        process.exit(1)
+      }
     }
 
     // Validate API key
@@ -91,6 +153,11 @@ export const TuiThreadCommand = cmd({
     if (!validation.valid) {
       UI.error(validation.error || "Invalid API key")
       process.exit(1)
+    }
+
+    // Save valid key for 30 days
+    if (apiKey !== config.apiKey) {
+      saveConfig({ apiKey, apiKeySetAt: Date.now() })
     }
 
     UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` API key valid (${validation.data!.decks_used}/${validation.data!.decks_limit} decks used)`)
