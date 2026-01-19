@@ -5,6 +5,96 @@ description: Create HTML/CSS presentations and slide decks. Use when user asks t
 
 # Presentation Creation Skill
 
+## Workflow Rules
+
+Before building any presentation:
+1. **Clarify** — Ask the user what they're building, who the audience is, what the goal is
+2. **Think** — Use your own logic to determine the best structure, don't just follow blindly
+3. **Research** — If unfamiliar with the topic, gather context first
+4. **Be intentional** — Every element should have a purpose. No decoration for decoration's sake.
+
+After building:
+1. Save the HTML file
+2. Open in browser for user to preview
+3. Offer to export as PNG (screenshot each slide)
+4. Offer to export as PPTX if requested
+5. Open the folder where files are saved
+
+---
+
+## Narrative Frameworks
+
+Choose the right structure based on presentation type:
+
+### Pitch Deck (Investors, Funding)
+1. Hook — One compelling statement
+2. Problem — The pain point you solve
+3. Solution — What you built
+4. How it works — Demo or visual
+5. Traction — Numbers, users, growth
+6. Team — Who's building this
+7. Ask — What you need (funding, partnerships)
+
+### Product Demo (Customers, Users)
+1. Context — What world are we in
+2. Pain — The problem they feel
+3. Solution — Your product
+4. Demo — Show it working
+5. Benefits — What they gain
+6. CTA — Next step to take
+
+### Teaching/Educational
+1. Overview — What we'll cover
+2. Concept 1 — First key idea
+3. Concept 2 — Second key idea
+4. Concept 3 — Third key idea (if needed)
+5. Summary — Key takeaways
+6. Q&A or Resources — Where to learn more
+
+---
+
+## Notion Style Theme
+
+When user requests "clean", "minimal", "Notion style", or "white background":
+
+### Design Tokens (Notion Style)
+```css
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f7f7;
+  --text-primary: #191919;
+  --text-secondary: #6b6b6b;
+  --accent: #000000;
+  --border: #e5e5e5;
+}
+```
+
+### Typography
+- Headlines: `'Fraunces', Georgia, serif` (weight 600)
+- Body: `'Inter', system-ui, sans-serif` (weight 400)
+- Load from Google Fonts:
+```html
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+```
+
+### Design Rules
+- White background, black text
+- Use thin lines (1px borders) to create structure
+- No emojis as icons
+- No decorative SVGs
+- Visualize with simple shapes, lines, and typography hierarchy
+- Generous whitespace (padding: 80px+)
+
+### Dimensions (Google Slides compatible)
+```css
+.slide {
+  width: 1920px;
+  height: 1080px;
+}
+```
+
+---
+
 ## Before Creating
 1. What is the presentation about?
 2. Who is the audience?
