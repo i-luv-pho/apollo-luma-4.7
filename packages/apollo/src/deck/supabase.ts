@@ -5,7 +5,7 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-export interface ApiKeyData {
+export interface AccessKeyData {
   id: string
   key: string
   name: string | null
@@ -15,7 +15,7 @@ export interface ApiKeyData {
   active: boolean
 }
 
-export async function validateApiKey(key: string): Promise<{ valid: boolean; data?: ApiKeyData; error?: string }> {
+export async function validateAccessKey(key: string): Promise<{ valid: boolean; data?: AccessKeyData; error?: string }> {
   try {
     const { data, error } = await supabase
       .from("deck_api_keys")
@@ -24,15 +24,15 @@ export async function validateApiKey(key: string): Promise<{ valid: boolean; dat
       .single()
 
     if (error || !data) {
-      return { valid: false, error: "Invalid API key" }
+      return { valid: false, error: "Invalid access key" }
     }
 
     if (!data.active) {
-      return { valid: false, error: "API key is disabled" }
+      return { valid: false, error: "access key is disabled" }
     }
 
     if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      return { valid: false, error: "API key has expired" }
+      return { valid: false, error: "access key has expired" }
     }
 
     if (data.decks_used >= data.decks_limit) {
@@ -41,7 +41,7 @@ export async function validateApiKey(key: string): Promise<{ valid: boolean; dat
 
     return { valid: true, data }
   } catch (e) {
-    return { valid: false, error: "Failed to validate API key" }
+    return { valid: false, error: "Failed to validate access key" }
   }
 }
 

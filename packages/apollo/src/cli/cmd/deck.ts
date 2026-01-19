@@ -7,7 +7,7 @@ import { bootstrap } from "../bootstrap"
 import { createApolloClient } from "@apollo-ai/sdk/v2"
 import { Server } from "../../server/server"
 import open from "open"
-import { validateApiKey, incrementUsage } from "../../deck/supabase"
+import { validateAccessKey, incrementUsage } from "../../deck/supabase"
 import { extractPDF, chunkText, isScannedPDF } from "../../util/pdf"
 import { summarizeDocument } from "../../util/summarize"
 
@@ -1207,29 +1207,29 @@ export const DeckCommand = cmd({
       process.exit(1)
     }
 
-    // Check API key
-    const apiKey = process.env.APOLLO_API_KEY
-    if (!apiKey) {
-      UI.error("API key required")
+    // Check access key
+    const accessKey = process.env.APOLLO_API_KEY
+    if (!accessKey) {
+      UI.error("access key required")
       UI.println()
-      UI.println("Set your API key to generate decks:")
+      UI.println("Set your access key to generate decks:")
       UI.println(UI.Style.TEXT_INFO_BOLD + "  export APOLLO_API_KEY=sk_xxxxx" + UI.Style.TEXT_NORMAL)
       UI.println()
-      UI.println(UI.Style.TEXT_DIM + "Get an API key from the Apollo admin." + UI.Style.TEXT_NORMAL)
+      UI.println(UI.Style.TEXT_DIM + "Get an access key from the Apollo admin." + UI.Style.TEXT_NORMAL)
       process.exit(1)
     }
 
-    // Validate API key
-    UI.println(UI.Style.TEXT_DIM + "Validating API key..." + UI.Style.TEXT_NORMAL)
-    const validation = await validateApiKey(apiKey)
+    // Validate access key
+    UI.println(UI.Style.TEXT_DIM + "Validating access key..." + UI.Style.TEXT_NORMAL)
+    const validation = await validateAccessKey(accessKey)
 
     if (!validation.valid) {
-      UI.error(validation.error || "Invalid API key")
+      UI.error(validation.error || "Invalid access key")
       process.exit(1)
     }
 
     const keyData = validation.data!
-    UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` API key valid (${keyData.decks_used}/${keyData.decks_limit} decks used)`)
+    UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` access key valid (${keyData.decks_used}/${keyData.decks_limit} decks used)`)
 
     UI.println()
     UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
@@ -1556,8 +1556,8 @@ Research thoroughly before generating. Include real data.${documentContext}`
       await eventProcessor
     })
 
-    // Increment API key usage after successful generation
-    await incrementUsage(apiKey)
+    // Increment access key usage after successful generation
+    await incrementUsage(accessKey)
     UI.println(UI.Style.TEXT_DIM + `Usage updated: ${keyData.decks_used + 1}/${keyData.decks_limit} decks` + UI.Style.TEXT_NORMAL)
 
     UI.println()

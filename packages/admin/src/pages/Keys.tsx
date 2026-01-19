@@ -1,8 +1,8 @@
 import { createSignal, createResource, For, Show } from "solid-js"
-import { getApiKeys, createApiKey, toggleApiKey, deleteApiKey, type ApiKey } from "../lib/supabase"
+import { getAccessKeys, createAccessKey, toggleAccessKey, deleteAccessKey, type AccessKey } from "../lib/supabase"
 
 export default function Keys() {
-  const [keys, { refetch }] = createResource(getApiKeys)
+  const [keys, { refetch }] = createResource(getAccessKeys)
   const [showCreate, setShowCreate] = createSignal(false)
   const [newName, setNewName] = createSignal("")
   const [newLimit, setNewLimit] = createSignal(10)
@@ -13,7 +13,7 @@ export default function Keys() {
     if (!newName()) return
     setCreating(true)
     try {
-      await createApiKey(newName(), newLimit())
+      await createAccessKey(newName(), newLimit())
       setNewName("")
       setNewLimit(10)
       setShowCreate(false)
@@ -25,13 +25,13 @@ export default function Keys() {
   }
 
   const handleToggle = async (id: string, active: boolean) => {
-    await toggleApiKey(id, !active)
+    await toggleAccessKey(id, !active)
     refetch()
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this API key?")) {
-      await deleteApiKey(id)
+    if (confirm("Delete this access key?")) {
+      await deleteAccessKey(id)
       refetch()
     }
   }
@@ -57,7 +57,7 @@ export default function Keys() {
   return (
     <div class="space-y-6">
       <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-white">API Keys</h1>
+        <h1 class="text-2xl font-bold text-white">Access Keys</h1>
         <button
           onClick={() => setShowCreate(true)}
           class="px-4 py-2 bg-[#6366f1] hover:bg-[#4f46e5] text-white rounded-lg font-medium text-sm"
@@ -70,7 +70,7 @@ export default function Keys() {
       <Show when={showCreate()}>
         <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div class="bg-[#1a1a1a] rounded-xl p-6 w-full max-w-md border border-[#2a2a2a]">
-            <h2 class="text-lg font-semibold text-white mb-4">Create API Key</h2>
+            <h2 class="text-lg font-semibold text-white mb-4">Create Access Key</h2>
             <div class="space-y-4">
               <div>
                 <label class="block text-[#71717a] text-sm mb-1">Name</label>
@@ -137,7 +137,7 @@ export default function Keys() {
           when={!keys.loading && keys()?.length}
           fallback={
             <div class="p-8 text-center text-[#71717a]">
-              {keys.loading ? "Loading..." : "No API keys yet. Create one to get started."}
+              {keys.loading ? "Loading..." : "No access keys yet. Create one to get started."}
             </div>
           }
         >
@@ -235,7 +235,7 @@ export default function Keys() {
       <div class="bg-[#1a1a1a] rounded-xl p-5 border border-[#2a2a2a]">
         <h2 class="text-white font-medium mb-3">How to use</h2>
         <div class="text-[#a1a1aa] text-sm space-y-2">
-          <p>1. Create an API key above</p>
+          <p>1. Create an access key above</p>
           <p>2. Give the key to your friend</p>
           <p>3. They set it in their terminal:</p>
           <code class="block bg-[#262626] p-3 rounded-lg text-[#6366f1] mt-2">

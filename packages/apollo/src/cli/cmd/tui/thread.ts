@@ -10,16 +10,16 @@ import { Log } from "@/util/log"
 import { withNetworkOptions, resolveNetworkOptions } from "@/cli/network"
 import type { Event } from "@apollo-ai/sdk/v2"
 import type { EventSource } from "./context/sdk"
-import { validateApiKey } from "@/deck/supabase"
+import { validateAccessKey } from "@/deck/supabase"
 
-// API key storage
+// access key storage
 const CONFIG_DIR = path.join(process.env.HOME || "~", ".apollo")
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json")
 const KEY_EXPIRY_DAYS = 30
 
 interface Config {
-  apiKey?: string
-  apiKeySetAt?: number
+  accessKey?: string
+  accessKeySetAt?: number
 }
 
 function loadConfig(): Config {
@@ -51,7 +51,7 @@ async function promptForKey(): Promise<string> {
   })
 
   return new Promise((resolve) => {
-    rl.question("Paste your API key: ", (answer) => {
+    rl.question("Paste your access key: ", (answer) => {
       rl.close()
       resolve(answer.trim())
     })
@@ -121,46 +121,46 @@ export const TuiThreadCommand = cmd({
         describe: "agent to use",
       }),
   handler: async (args) => {
-    // Get API key - check env, then saved config, then prompt
-    let apiKey = process.env.APOLLO_API_KEY
+    // Get access key - check env, then saved config, then prompt
+    let accessKey = process.env.APOLLO_API_KEY
     const config = loadConfig()
 
     // Check saved key
-    if (!apiKey && config.apiKey && config.apiKeySetAt) {
-      if (isKeyExpired(config.apiKeySetAt)) {
-        UI.println(UI.Style.TEXT_DIM + "API key expired. Please enter a new one." + UI.Style.TEXT_NORMAL)
+    if (!accessKey && config.accessKey && config.accessKeySetAt) {
+      if (isKeyExpired(config.accessKeySetAt)) {
+        UI.println(UI.Style.TEXT_DIM + "access key expired. Please enter a new one." + UI.Style.TEXT_NORMAL)
         UI.println()
       } else {
-        apiKey = config.apiKey
+        accessKey = config.accessKey
       }
     }
 
     // Prompt for key if needed
-    if (!apiKey) {
+    if (!accessKey) {
       UI.println()
       UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "First time setup" + UI.Style.TEXT_NORMAL)
       UI.println()
-      apiKey = await promptForKey()
+      accessKey = await promptForKey()
 
-      if (!apiKey) {
-        UI.error("No API key provided")
+      if (!accessKey) {
+        UI.error("No access key provided")
         process.exit(1)
       }
     }
 
-    // Validate API key
-    const validation = await validateApiKey(apiKey)
+    // Validate access key
+    const validation = await validateAccessKey(accessKey)
     if (!validation.valid) {
-      UI.error(validation.error || "Invalid API key")
+      UI.error(validation.error || "Invalid access key")
       process.exit(1)
     }
 
     // Save valid key for 30 days
-    if (apiKey !== config.apiKey) {
-      saveConfig({ apiKey, apiKeySetAt: Date.now() })
+    if (accessKey !== config.accessKey) {
+      saveConfig({ accessKey, accessKeySetAt: Date.now() })
     }
 
-    UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` API key valid (${validation.data!.decks_used}/${validation.data!.decks_limit} decks used)`)
+    UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` access key valid (${validation.data!.decks_used}/${validation.data!.decks_limit} decks used)`)
     UI.println()
 
     // Resolve relative paths against PWD to preserve behavior when using --cwd flag
