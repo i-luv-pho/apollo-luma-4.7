@@ -533,15 +533,16 @@ Generate this exact structure (Google Slides-style with export buttons):
     async function downloadPPTX() {
       try {
         showToast('Generating PowerPoint...');
-        if (typeof PptxGenJS === 'undefined') { showToast('Error: PptxGenJS not loaded'); return; }
-        if (typeof html2canvas === 'undefined') { showToast('Error: html2canvas not loaded'); return; }
+        if (typeof PptxGenJS === 'undefined') { showToast('Error: PptxGenJS not loaded. Refresh page.'); return; }
+        if (typeof html2canvas === 'undefined') { showToast('Error: html2canvas not loaded. Refresh page.'); return; }
         const slides = document.querySelectorAll('.slide');
+        if (slides.length === 0) { showToast('No slides to export'); return; }
         const pptx = new PptxGenJS();
         pptx.layout = 'LAYOUT_16x9';
-        pptx.title = document.getElementById('deck-title')?.textContent || 'Deck';
+        const deckTitle = document.getElementById('deck-title')?.textContent || 'Presentation';
+        pptx.title = deckTitle;
         pptx.author = 'Deck by Apollo';
-        const deckTitle = document.getElementById('deck-title')?.textContent || 'deck';
-        const safeTitle = deckTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+        const safeTitle = deckTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) || 'presentation';
         for (let i = 0; i < slides.length; i++) {
           const slide = slides[i];
           showToast(`Converting slide ${i + 1} of ${slides.length}...`);
@@ -552,9 +553,10 @@ Generate this exact structure (Google Slides-style with export buttons):
           pptxSlide.addImage({ data: canvas.toDataURL('image/png'), x: 0, y: 0, w: '100%', h: '100%' });
         }
         showToast('Saving PowerPoint file...');
-        await pptx.writeFile({ fileName: `${safeTitle}.pptx` });
+        const blob = await pptx.write({ outputType: 'blob' });
+        downloadBlob(blob, `${safeTitle}.pptx`);
         showToast('PowerPoint downloaded!');
-      } catch (err) { console.error('PPTX export error:', err); showToast('Export failed: ' + err.message); }
+      } catch (err) { console.error('PPTX export error:', err); showToast('PPTX failed: ' + (err.message || err)); }
     }
 
     function downloadBlob(blob, filename) {

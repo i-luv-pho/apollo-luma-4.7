@@ -1107,12 +1107,13 @@ function generateDeckHTML(title: string, slides: string[] = [], autoDownload: bo
         }
 
         showToast('Saving PowerPoint file...');
-        await pptx.writeFile({ fileName: \`\${safeTitle}.pptx\` });
+        const blob = await pptx.write({ outputType: 'blob' });
+        downloadBlob(blob, \`\${safeTitle}.pptx\`);
 
         showToast('PowerPoint downloaded!');
       } catch (err) {
         console.error('PPTX export error:', err);
-        showToast('Export failed: ' + err.message);
+        showToast('PPTX failed: ' + (err.message || err));
       }
     }
 
