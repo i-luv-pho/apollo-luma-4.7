@@ -19,9 +19,10 @@
   "dependencies": {
     "@kobalte/core": "catalog:",
     "@solidjs/router": "catalog:",
-    "solid-js": "catalog:",
-    "tailwindcss": "catalog:",
+    "@supabase/supabase-js": "2.90.1",
     "chart.js": "^4.4.1",
-    "luxon": "catalog:"
+    "luxon": "catalog:",
+    "solid-js": "catalog:",
+    "tailwindcss": "catalog:"
   }
 }

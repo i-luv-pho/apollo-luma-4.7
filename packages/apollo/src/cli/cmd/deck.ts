@@ -7,6 +7,8 @@ import { bootstrap } from "../bootstrap"
 import { createApolloClient } from "@apollo-ai/sdk/v2"
 import { Server } from "../../server/server"
 import open from "open"
+import { validateApiKey, incrementUsage } from "../../deck/supabase"
+
 const DECK_DIR = path.join(process.env.HOME || "~", "Apollo", "decks")
 
 // Deck command uses the main Apollo system prompt (anthropic.txt)
@@ -1198,6 +1200,30 @@ export const DeckCommand = cmd({
       process.exit(1)
     }
 
+    // Check API key
+    const apiKey = process.env.APOLLO_API_KEY
+    if (!apiKey) {
+      UI.error("API key required")
+      UI.println()
+      UI.println("Set your API key to generate decks:")
+      UI.println(UI.Style.TEXT_INFO_BOLD + "  export APOLLO_API_KEY=sk_xxxxx" + UI.Style.TEXT_NORMAL)
+      UI.println()
+      UI.println(UI.Style.TEXT_DIM + "Get an API key from the Apollo admin." + UI.Style.TEXT_NORMAL)
+      process.exit(1)
+    }
+
+    // Validate API key
+    UI.println(UI.Style.TEXT_DIM + "Validating API key..." + UI.Style.TEXT_NORMAL)
+    const validation = await validateApiKey(apiKey)
+
+    if (!validation.valid) {
+      UI.error(validation.error || "Invalid API key")
+      process.exit(1)
+    }
+
+    const keyData = validation.data!
+    UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` API key valid (${keyData.decks_used}/${keyData.decks_limit} decks used)`)
+
     UI.println()
     UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
     UI.println()
@@ -1441,6 +1467,10 @@ Research thoroughly before generating. Include real data.`
 
       await eventProcessor
     })
+
+    // Increment API key usage after successful generation
+    await incrementUsage(apiKey)
+    UI.println(UI.Style.TEXT_DIM + `Usage updated: ${keyData.decks_used + 1}/${keyData.decks_limit} decks` + UI.Style.TEXT_NORMAL)
 
     UI.println()
     UI.println(UI.Style.TEXT_SUCCESS_BOLD + "Deck ready!" + UI.Style.TEXT_NORMAL)

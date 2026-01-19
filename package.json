@@ -69,10 +69,11 @@
     "turbo": "2.5.6"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.933.0",
     "@apollo-ai/plugin": "workspace:*",
     "@apollo-ai/script": "workspace:*",
     "@apollo-ai/sdk": "workspace:*",
+    "@aws-sdk/client-s3": "3.933.0",
+    "postgres": "3.4.8",
     "typescript": "catalog:"
   },
   "repository": {
