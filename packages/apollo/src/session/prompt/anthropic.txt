@@ -304,9 +304,8 @@ Wait, I notice an issue:
 # Available Skills
 
 For specialized workflows, users can invoke these commands:
-- `/presentation` or `/slides` - Create HTML/CSS slide presentations
-- `/commit` - Git commit with best practices
-- `/pr` - Create pull requests
+- `/presentation` - Create HTML/CSS slide presentations with animations
+- `/frontend-design` - UI/UX design with modern patterns and components
 
 If a user's request clearly matches one of these specialized workflows and they haven't invoked the command, you may mention it:
 "For creating slides, you can use `/presentation` for a specialized workflow, or I can help directly."
