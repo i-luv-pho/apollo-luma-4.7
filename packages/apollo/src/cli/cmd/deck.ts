@@ -7,6 +7,7 @@ import { bootstrap } from "../bootstrap"
 import { createApolloClient } from "@apollo-ai/sdk/v2"
 import { Server } from "../../server/server"
 import open from "open"
+import { getLicense, decrementDecks, isExpired, getLicenseRaw } from "./activate"
 
 const DECK_DIR = path.join(process.env.HOME || "~", "Apollo", "decks")
 
@@ -1254,6 +1255,18 @@ export const DeckCommand = cmd({
       process.exit(1)
     }
 
+    // Check license
+    const license = getLicense()
+    if (!license || license.decks_remaining <= 0) {
+      UI.error("No decks remaining")
+      UI.println()
+      UI.println("Get a license code and run:")
+      UI.println("  apollo activate APOLLO-XXXX-XX-XXXX")
+      process.exit(1)
+    }
+
+    UI.println(UI.Style.TEXT_DIM + `License: ${license.decks_remaining} decks remaining` + UI.Style.TEXT_NORMAL)
+
     UI.println()
     UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
     UI.println()
@@ -1421,6 +1434,12 @@ export const DeckCommand = cmd({
 
                   broadcast({ type: "deck_complete" })
                   broadcast({ type: "full_refresh" })
+
+                  // Decrement license
+                  decrementDecks()
+                  const remaining = getLicense()?.decks_remaining ?? 0
+                  UI.println()
+                  UI.println(UI.Style.TEXT_DIM + `${remaining} decks remaining` + UI.Style.TEXT_NORMAL)
 
                   if (data.sources && data.sources.length > 0) {
                     UI.println()

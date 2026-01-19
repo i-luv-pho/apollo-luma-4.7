@@ -27,6 +27,7 @@ import { WebCommand } from "./cli/cmd/web"
 import { PrCommand } from "./cli/cmd/pr"
 import { SessionCommand } from "./cli/cmd/session"
 import { DeckCommand } from "./cli/cmd/deck"
+import { ActivateCommand } from "./cli/cmd/activate"
 
 process.on("unhandledRejection", (e) => {
   Log.Default.error("rejection", {
@@ -99,6 +100,7 @@ const cli = yargs(hideBin(process.argv))
   .command(PrCommand)
   .command(SessionCommand)
   .command(DeckCommand)
+  .command(ActivateCommand)
   .fail((msg, err) => {
     if (
       msg?.startsWith("Unknown argument") ||
