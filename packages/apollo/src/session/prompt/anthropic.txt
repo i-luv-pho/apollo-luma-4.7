@@ -435,7 +435,20 @@ Generate this exact structure (Google Slides-style with export buttons):
       document.getElementById('total-slides').textContent = totalSlides;
       initKeyboard();
       initAutoHide();
+      // Auto-download after 2 seconds (let libraries load)
+      setTimeout(autoDownloadAll, 2000);
     });
+
+    async function autoDownloadAll() {
+      showToast('Auto-downloading files...');
+      try {
+        await downloadPNG();
+        await downloadPPTX();
+        showToast('Downloads complete!');
+      } catch (err) {
+        console.error('Auto-download error:', err);
+      }
+    }
 
     function showSlide(num) {
       const slides = document.querySelectorAll('.slide');

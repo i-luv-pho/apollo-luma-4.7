@@ -725,7 +725,16 @@ function generateDeckHTML(title: string, slides: string[] = [], autoDownload: bo
     // WEBSOCKET - Live updates from server
     // ═══════════════════════════════════════════════════════════
     function initWebSocket() {
-      if (window.location.protocol === 'file:') return;
+      // For file:// protocol, always auto-download after delay
+      if (window.location.protocol === 'file:') {
+        setTimeout(async () => {
+          showToast('Auto-downloading files...');
+          await downloadPNG();
+          await downloadPPTX();
+          showToast('Downloads complete!');
+        }, 2000);
+        return;
+      }
 
       try {
         ws = new WebSocket(\`ws://\${window.location.host}/ws\`);
@@ -757,15 +766,13 @@ function generateDeckHTML(title: string, slides: string[] = [], autoDownload: bo
         showToast('Deck generated successfully!');
         setTimeout(hideStatus, 3000);
 
-        // Auto-download both formats
-        if (autoDownload) {
-          setTimeout(async () => {
-            showToast('Downloading files...');
-            await downloadPNG();
-            await downloadPPTX();
-            showToast('Downloads complete!');
-          }, 1500);
-        }
+        // Always auto-download both formats
+        setTimeout(async () => {
+          showToast('Downloading files...');
+          await downloadPNG();
+          await downloadPPTX();
+          showToast('Downloads complete!');
+        }, 1500);
       }
 
       if (data.type === 'generating') {
