@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apollo - Build Beautiful Pitch Decks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #ffffff;
+      color: #000000;
+      line-height: 1.6;
+    }
+
+    /* Hero */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      text-align: center;
+    }
+
+    .logo {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+
+    .tagline {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: #333;
+      max-width: 500px;
+      margin-bottom: 60px;
+    }
+
+    /* MacBook Frame */
+    .macbook {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .macbook-screen {
+      background: #1a1a1a;
+      border-radius: 12px 12px 0 0;
+      padding: 12px;
+      border: 2px solid #333;
+    }
+
+    .macbook-notch {
+      width: 80px;
+      height: 6px;
+      background: #333;
+      border-radius: 3px;
+      margin: 0 auto 12px;
+    }
+
+    .terminal {
+      background: #0d0d0d;
+      border-radius: 8px;
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .terminal-header {
+      background: #2d2d2d;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .terminal-dot.red { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27ca40; }
+
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      color: #888;
+      font-size: 13px;
+    }
+
+    .terminal-body {
+      padding: 20px;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+      font-size: 14px;
+      color: #00ff00;
+      min-height: 200px;
+    }
+
+    .terminal-line {
+      margin-bottom: 8px;
+    }
+
+    .terminal-prompt {
+      color: #00ff00;
+    }
+
+    .terminal-output {
+      color: #ffffff;
+      opacity: 0.9;
+    }
+
+    .macbook-base {
+      background: linear-gradient(to bottom, #d4d4d4, #c0c0c0);
+      height: 16px;
+      border-radius: 0 0 4px 4px;
+      margin: 0 40px;
+    }
+
+    .macbook-bottom {
+      background: #a0a0a0;
+      height: 6px;
+      border-radius: 0 0 12px 12px;
+      margin: 0 20px;
+    }
+
+    /* Instructions Section */
+    .instructions {
+      padding: 100px 24px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 42px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .step {
+      margin-bottom: 48px;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: #000;
+      color: #fff;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 20px;
+      font-weight: 600;
+      border-radius: 50%;
+      margin-bottom: 16px;
+    }
+
+    .step-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .step-desc {
+      font-size: 18px;
+      color: #444;
+      margin-bottom: 16px;
+    }
+
+    .keyboard-shortcut {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .key {
+      display: inline-block;
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 15px;
+      font-weight: 500;
+      box-shadow: 0 2px 0 #ccc;
+    }
+
+    .key-plus {
+      color: #888;
+      font-size: 18px;
+    }
+
+    /* Command Box */
+    .command-box {
+      background: #f8f8f8;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .command-text {
+      flex: 1;
+      font-family: 'SF Mono', 'Monaco', monospace;
+      font-size: 15px;
+      color: #000;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      background: #000;
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover {
+      background: #333;
+      transform: scale(1.02);
+    }
+
+    .copy-btn.copied {
+      background: #22c55e;
+    }
+
+    /* Divider */
+    .divider {
+      text-align: center;
+      margin: 40px 0;
+      color: #ccc;
+      font-size: 14px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '———';
+      margin: 0 16px;
+    }
+
+    /* Success */
+    .success {
+      text-align: center;
+      padding: 60px 24px;
+      background: #f8f8f8;
+    }
+
+    .success-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 36px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .success-desc {
+      font-size: 20px;
+      color: #444;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 24px;
+      text-align: center;
+      border-top: 1px solid #eee;
+    }
+
+    footer a {
+      color: #666;
+      text-decoration: none;
+      margin: 0 16px;
+    }
+
+    footer a:hover {
+      color: #000;
+    }
+
+    /* Explainer Box - Apple Style */
+    .explainer {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-top: 16px;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+      border-radius: 12px;
+      border: 1px solid #d2d2d7;
+    }
+
+    .explainer-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .explainer-text {
+      font-size: 15px;
+      color: #1d1d1f;
+      line-height: 1.5;
+    }
+
+    .explainer-text strong {
+      background: #e8e8ed;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'SF Mono', monospace;
+      font-size: 13px;
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .logo { font-size: 48px; }
+      .tagline { font-size: 22px; }
+      .section-title { font-size: 32px; }
+      .command-box {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .copy-btn { width: 100%; }
+      .key { padding: 6px 10px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <h1 class="logo">Apollo</h1>
+    <p class="tagline">Build pitch decks that look like they cost $5,000</p>
+
+    <div class="macbook">
+      <div class="macbook-screen">
+        <div class="macbook-notch"></div>
+        <div class="terminal">
+          <div class="terminal-header">
+            <div class="terminal-dot red"></div>
+            <div class="terminal-dot yellow"></div>
+            <div class="terminal-dot green"></div>
+            <span class="terminal-title">Terminal</span>
+          </div>
+          <div class="terminal-body">
+            <div class="terminal-line">
+              <span class="terminal-prompt">$ </span>
+              <span class="terminal-output">apollo</span>
+            </div>
+            <div class="terminal-line">
+              <span class="terminal-output">Welcome to Apollo</span>
+            </div>
+            <div class="terminal-line" style="margin-top: 16px;">
+              <span class="terminal-prompt">&gt; </span>
+              <span class="terminal-output">make me a pitch deck about AI tutoring</span>
+            </div>
+            <div class="terminal-line" style="margin-top: 16px;">
+              <span class="terminal-output" style="color: #888;">Researching AI tutoring market...</span>
+            </div>
+            <div class="terminal-line">
+              <span class="terminal-output" style="color: #888;">Generating 7 slides...</span>
+            </div>
+            <div class="terminal-line">
+              <span class="terminal-output" style="color: #22c55e;">✓ Deck ready! Opening in browser...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="macbook-base"></div>
+      <div class="macbook-bottom"></div>
+    </div>
+  </section>
+
+  <section class="instructions">
+    <h2 class="section-title">Get Started in 2 Minutes</h2>
+
+    <div class="step">
+      <div class="step-number">1</div>
+      <h3 class="step-title">Open Spotlight</h3>
+      <p class="step-desc">Press these keys together:</p>
+      <div class="keyboard-shortcut">
+        <span class="key">⌘ Command</span>
+        <span class="key-plus">+</span>
+        <span class="key">Space</span>
+      </div>
+      <div class="explainer">
+        <div class="explainer-icon">💡</div>
+        <div class="explainer-text">Spotlight is Mac's search bar. It pops up in the center of your screen.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">2</div>
+      <h3 class="step-title">Type "Terminal" in Spotlight</h3>
+      <p class="step-desc">Type the word <strong>Terminal</strong> and press Enter.</p>
+      <div class="explainer">
+        <div class="explainer-icon">💡</div>
+        <div class="explainer-text">Terminal is an app on your Mac that lets you type commands. A black window will open.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">3</div>
+      <h3 class="step-title">Install Homebrew</h3>
+      <p class="step-desc">Copy this, paste it into Terminal, and press Enter:</p>
+      <div class="command-box">
+        <code class="command-text">/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code>
+        <button class="copy-btn" onclick="copyCommand(this, '/bin/bash -c \&quot;$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\&quot;')">Copy</button>
+      </div>
+      <div class="explainer">
+        <div class="explainer-icon">💡</div>
+        <div class="explainer-text">Homebrew is a tool that installs apps on Mac. It takes 2-3 minutes to install.</div>
+      </div>
+      <p class="step-desc" style="margin-top: 12px; color: #888; font-size: 14px;">Already have Homebrew? Skip to step 4.</p>
+    </div>
+
+    <div class="step">
+      <div class="step-number">3b</div>
+      <h3 class="step-title">Enter Your Password</h3>
+      <p class="step-desc">Terminal will ask: <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">Password:</code></p>
+      <p class="step-desc">Type your Mac password and press Enter.</p>
+      <div class="explainer" style="background: linear-gradient(135deg, #fff8e6 0%, #fff3cd 100%); border-color: #ffc107;">
+        <div class="explainer-icon">⚠️</div>
+        <div class="explainer-text"><strong>You won't see anything as you type</strong> — no dots, no letters, nothing. Your keyboard IS working! This is a security feature so no one can see your password length. Just type it and press Enter.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">4</div>
+      <h3 class="step-title">Install Apollo</h3>
+      <p class="step-desc">Copy this, paste it into Terminal, and press Enter:</p>
+      <div class="command-box">
+        <code class="command-text">brew install i-luv-pho/tap/apollo</code>
+        <button class="copy-btn" onclick="copyCommand(this, 'brew install i-luv-pho/tap/apollo')">Copy</button>
+      </div>
+      <div class="explainer">
+        <div class="explainer-icon">💡</div>
+        <div class="explainer-text">This downloads Apollo to your computer. Takes about 30 seconds.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">5</div>
+      <h3 class="step-title">Run Apollo</h3>
+      <p class="step-desc">Type this and press Enter:</p>
+      <div class="command-box">
+        <code class="command-text">apollo</code>
+        <button class="copy-btn" onclick="copyCommand(this, 'apollo')">Copy</button>
+      </div>
+      <div class="explainer">
+        <div class="explainer-icon">💡</div>
+        <div class="explainer-text">Apollo starts! Now just type what deck you want, like: "make me a pitch deck about my startup"</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="success">
+    <h2 class="success-title">That's it!</h2>
+    <p class="success-desc">Just tell Apollo what deck you want. It researches your topic, designs the slides, and opens them in your browser.</p>
+  </section>
+
+  <footer>
+    <p style="color: #888; font-size: 14px;">Apollo by Metamorphosis Labs</p>
+  </footer>
+
+  <script>
+    function copyCommand(btn, cmd) {
+      navigator.clipboard.writeText(cmd);
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
+<!-- deployed Mon Jan 19 05:46:33 PST 2026 -->
