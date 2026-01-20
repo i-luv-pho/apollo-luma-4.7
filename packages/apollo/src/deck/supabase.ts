@@ -72,18 +72,24 @@ export async function validateAccessKey(key: string): Promise<{ valid: boolean; 
 
 export async function incrementUsage(key: string): Promise<void> {
   try {
-    // Get current usage
-    const { data } = await supabase
-      .from("deck_api_keys")
-      .select("decks_used")
-      .eq("key", key)
-      .single()
+    // Try atomic RPC first (best approach - no race condition)
+    const { error } = await supabase.rpc("increment_deck_usage", { access_key: key })
 
-    if (data) {
-      await supabase
+    if (error) {
+      // RPC doesn't exist - fall back to read-then-write
+      // Note: This has a race condition if two requests happen simultaneously
+      const { data } = await supabase
         .from("deck_api_keys")
-        .update({ decks_used: data.decks_used + 1 })
+        .select("decks_used")
         .eq("key", key)
+        .single()
+
+      if (data) {
+        await supabase
+          .from("deck_api_keys")
+          .update({ decks_used: data.decks_used + 1 })
+          .eq("key", key)
+      }
     }
   } catch (e) {
     console.error("Failed to increment usage:", e)

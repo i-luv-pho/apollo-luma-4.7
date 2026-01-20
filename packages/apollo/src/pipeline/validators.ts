@@ -69,11 +69,11 @@ export namespace PipelineValidators {
   /**
    * Checkpoint 3: Validate slide outline
    */
-  export function validateOutline(outline: SlidePipeline.SlideOutline): ValidationResult {
+  export function validateOutline(outline: SlidePipeline.SlideOutline, expectedSlides: number = 7): ValidationResult {
     const errors: string[] = []
 
-    if (outline.headlines.length !== 7) {
-      errors.push(`Expected 7 slides, got ${outline.headlines.length}`)
+    if (outline.headlines.length !== expectedSlides) {
+      errors.push(`Expected ${expectedSlides} slides, got ${outline.headlines.length}`)
     }
 
     // Validate each headline
@@ -100,11 +100,11 @@ export namespace PipelineValidators {
   /**
    * Checkpoint 4: Validate built HTML slides
    */
-  export function validateBuild(slides: SlidePipeline.SlideHTML[]): ValidationResult {
+  export function validateBuild(slides: SlidePipeline.SlideHTML[], expectedSlides: number = 7): ValidationResult {
     const errors: string[] = []
 
-    if (slides.length < 7) {
-      errors.push(`Expected 7 slides, got ${slides.length}`)
+    if (slides.length < expectedSlides) {
+      errors.push(`Expected ${expectedSlides} slides, got ${slides.length}`)
     }
 
     slides.forEach(slide => {
@@ -144,6 +144,7 @@ export namespace PipelineValidators {
    */
   export function validateState(state: SlidePipeline.State): ValidationResult {
     const allErrors: string[] = []
+    const expectedSlides = state.context?.slide_count ?? 7
 
     if (state.context) {
       const ctx = validateContext(state.context)
@@ -156,12 +157,12 @@ export namespace PipelineValidators {
     }
 
     if (state.outline) {
-      const out = validateOutline(state.outline)
+      const out = validateOutline(state.outline, expectedSlides)
       if (!out.valid) allErrors.push(...out.errors.map(e => `[Outline] ${e}`))
     }
 
     if (state.slides) {
-      const bld = validateBuild(state.slides)
+      const bld = validateBuild(state.slides, expectedSlides)
       if (!bld.valid) allErrors.push(...bld.errors.map(e => `[Build] ${e}`))
     }
 

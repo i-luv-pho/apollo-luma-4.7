@@ -86,10 +86,11 @@ export namespace SlidePipeline {
   }
 
   export function canAdvance(state: State): boolean {
+    const expectedSlides = state.context?.slide_count ?? 7
     switch (state.step) {
       case 'understand': return !!state.context
       case 'research': return !!state.research && state.research.supporting_facts.length >= 3
-      case 'outline': return !!state.outline && state.outline.headlines.length === 7
+      case 'outline': return !!state.outline && state.outline.headlines.length === expectedSlides
       case 'design': return true
       case 'build': return !!state.slides && state.slides.length > 0
       case 'verify': return !!state.validation && state.validation.passed
