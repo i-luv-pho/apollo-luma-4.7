@@ -1,0 +1,93 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Apollo",
+  "identifier": "com.metamorphosis.apollo",
+  "version": "0.1.0",
+  "build": {
+    "beforeBuildCommand": "bun run build",
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "AI-powered development tool",
+    "longDescription": "Apollo v2 - Illuminating your code. An AI-powered development tool by Metamorphosis Labs.",
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "entitlements": null,
+      "exceptionDomain": null,
+      "signingIdentity": null,
+      "providerShortName": null
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "deb": {
+        "depends": []
+      },
+      "rpm": {
+        "depends": []
+      }
+    }
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "label": "main",
+        "title": "Apollo",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "transparent": false,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "acceptFirstMouse": true,
+        "tabbingIdentifier": "apollo"
+      }
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://api.github.com/repos/i-luv-pho/apollov2/releases/latest"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    },
+    "shell": {
+      "open": true
+    },
+    "notification": {
+      "all": true
+    },
+    "fs": {
+      "all": true,
+      "scope": ["$HOME/**", "$APPDATA/**", "$APPCONFIG/**"]
+    }
+  }
+}
