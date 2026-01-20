@@ -168,11 +168,11 @@ else
 
     if [ -z "$requested_version" ]; then
         url="https://github.com/i-luv-pho/apollo-luma-4.7/releases/latest/download/$filename"
-        specific_version=$(curl -s https://api.github.com/repos/i-luv-pho/apollo-luma-4.7/releases/latest | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p')
+        # Try to get version from API, fall back to "latest" if rate-limited
+        specific_version=$(curl -s https://api.github.com/repos/i-luv-pho/apollo-luma-4.7/releases/latest 2>/dev/null | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p')
 
-        if [[ $? -ne 0 || -z "$specific_version" ]]; then
-            echo -e "${RED}Failed to fetch version information${NC}"
-            exit 1
+        if [[ -z "$specific_version" ]]; then
+            specific_version="latest"
         fi
     else
         # Strip leading 'v' if present
