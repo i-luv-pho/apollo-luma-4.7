@@ -96,9 +96,132 @@ export async function incrementUsage(key: string): Promise<void> {
 
   // Fallback if RPC doesn't exist
   if (error) {
-    await supabase
+    const { data } = await supabase
       .from('deck_api_keys')
-      .update({ decks_used: supabase.rpc('', {}) })
+      .select('decks_used')
       .eq('key', key)
+      .single()
+
+    if (data) {
+      await supabase
+        .from('deck_api_keys')
+        .update({ decks_used: data.decks_used + 1 })
+        .eq('key', key)
+    }
   }
+}
+
+// ============================================
+// Asset Management
+// ============================================
+
+export interface Asset {
+  id: string
+  access_key_id: string
+  storage_path: string
+  public_url: string
+  label: string
+  description: string | null
+  tags: string[]
+  created_at: string
+}
+
+export async function getAssets(): Promise<Asset[]> {
+  const { data, error } = await supabase
+    .from('deck_assets')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getAssetsForKey(keyId: string): Promise<Asset[]> {
+  const { data, error } = await supabase
+    .from('deck_assets')
+    .select('*')
+    .eq('access_key_id', keyId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function uploadAsset(
+  keyId: string,
+  file: File,
+  label: string,
+  description?: string
+): Promise<Asset> {
+  // Generate unique filename
+  const ext = file.name.split('.').pop() || 'png'
+  const uniqueName = `${keyId}/${Date.now()}-${file.name}`
+
+  // Upload to storage
+  const { error: uploadError } = await supabase.storage
+    .from('deck-assets')
+    .upload(uniqueName, file, {
+      contentType: file.type,
+      upsert: false
+    })
+
+  if (uploadError) throw uploadError
+
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from('deck-assets')
+    .getPublicUrl(uniqueName)
+
+  // Create database record
+  const { data, error } = await supabase
+    .from('deck_assets')
+    .insert({
+      access_key_id: keyId,
+      storage_path: uniqueName,
+      public_url: urlData.publicUrl,
+      label,
+      description: description || null,
+      tags: []
+    })
+    .select()
+    .single()
+
+  if (error) {
+    // Cleanup uploaded file
+    await supabase.storage.from('deck-assets').remove([uniqueName])
+    throw error
+  }
+
+  return data
+}
+
+export async function updateAsset(id: string, updates: { label?: string; description?: string }): Promise<void> {
+  const { error } = await supabase
+    .from('deck_assets')
+    .update(updates)
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function deleteAsset(id: string): Promise<void> {
+  // Get asset to find storage path
+  const { data: asset } = await supabase
+    .from('deck_assets')
+    .select('storage_path')
+    .eq('id', id)
+    .single()
+
+  if (asset) {
+    // Delete from storage
+    await supabase.storage.from('deck-assets').remove([asset.storage_path])
+  }
+
+  // Delete from database
+  const { error } = await supabase
+    .from('deck_assets')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
 }

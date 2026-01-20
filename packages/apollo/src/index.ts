@@ -27,6 +27,7 @@ import { WebCommand } from "./cli/cmd/web"
 import { PrCommand } from "./cli/cmd/pr"
 import { SessionCommand } from "./cli/cmd/session"
 import { DeckCommand } from "./cli/cmd/deck"
+import { AssetCommand } from "./cli/cmd/asset"
 import { LoginCommand, LogoutCommand } from "./cli/cmd/login"
 
 process.on("unhandledRejection", (e) => {
@@ -100,6 +101,7 @@ const cli = yargs(hideBin(process.argv))
   .command(PrCommand)
   .command(SessionCommand)
   .command(DeckCommand)
+  .command(AssetCommand)
   .command(LoginCommand)
   .command(LogoutCommand)
   .fail((msg, err) => {

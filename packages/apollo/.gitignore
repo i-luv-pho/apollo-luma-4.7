@@ -2,3 +2,8 @@ research
 dist
 gen
 app.log
+
+# Generated deck files
+*.html
+*-deck.html
+*-slides/

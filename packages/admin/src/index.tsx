@@ -10,6 +10,7 @@ import Revenue from "./pages/Revenue"
 import Usage from "./pages/Usage"
 import Settings from "./pages/Settings"
 import Keys from "./pages/Keys"
+import Assets from "./pages/Assets"
 
 render(
   () => (
@@ -19,6 +20,7 @@ render(
       <Route path="/revenue" component={Revenue} />
       <Route path="/usage" component={Usage} />
       <Route path="/keys" component={Keys} />
+      <Route path="/assets" component={Assets} />
       <Route path="/settings" component={Settings} />
     </Router>
   ),

@@ -89,3 +89,139 @@ export async function incrementUsage(key: string): Promise<void> {
     console.error("Failed to increment usage:", e)
   }
 }
+
+// ============================================
+// Asset Management
+// ============================================
+
+export interface Asset {
+  id: string
+  access_key_id: string
+  storage_path: string
+  public_url: string
+  label: string
+  description: string | null
+  tags: string[]
+  created_at: string
+}
+
+async function getAccessKeyId(key: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("deck_api_keys")
+    .select("id")
+    .eq("key", key)
+    .single()
+  return data?.id || null
+}
+
+export async function uploadAsset(
+  accessKey: string,
+  fileBuffer: Buffer,
+  fileName: string,
+  label: string,
+  description?: string
+): Promise<{ success: boolean; asset?: Asset; error?: string }> {
+  try {
+    const keyId = await getAccessKeyId(accessKey)
+    if (!keyId) {
+      return { success: false, error: "Invalid access key" }
+    }
+
+    // Generate unique filename
+    const ext = fileName.split(".").pop() || "png"
+    const uniqueName = `${keyId}/${Date.now()}-${fileName}`
+
+    // Upload to storage
+    const { error: uploadError } = await supabase.storage
+      .from("deck-assets")
+      .upload(uniqueName, fileBuffer, {
+        contentType: `image/${ext}`,
+        upsert: false
+      })
+
+    if (uploadError) {
+      return { success: false, error: `Upload failed: ${uploadError.message}` }
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("deck-assets")
+      .getPublicUrl(uniqueName)
+
+    // Create database record
+    const { data: asset, error: dbError } = await supabase
+      .from("deck_assets")
+      .insert({
+        access_key_id: keyId,
+        storage_path: uniqueName,
+        public_url: urlData.publicUrl,
+        label,
+        description: description || null,
+        tags: []
+      })
+      .select()
+      .single()
+
+    if (dbError) {
+      // Cleanup uploaded file if db insert fails
+      await supabase.storage.from("deck-assets").remove([uniqueName])
+      return { success: false, error: `Database error: ${dbError.message}` }
+    }
+
+    return { success: true, asset }
+  } catch (e) {
+    return { success: false, error: `Failed to upload: ${e}` }
+  }
+}
+
+export async function getAssetsForKey(accessKey: string): Promise<Asset[]> {
+  try {
+    const keyId = await getAccessKeyId(accessKey)
+    if (!keyId) return []
+
+    const { data, error } = await supabase
+      .from("deck_assets")
+      .select("*")
+      .eq("access_key_id", keyId)
+      .order("created_at", { ascending: false })
+
+    if (error) return []
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+export async function deleteAsset(accessKey: string, assetId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const keyId = await getAccessKeyId(accessKey)
+    if (!keyId) {
+      return { success: false, error: "Invalid access key" }
+    }
+
+    // Get asset to find storage path
+    const { data: asset } = await supabase
+      .from("deck_assets")
+      .select("*")
+      .eq("id", assetId)
+      .eq("access_key_id", keyId)
+      .single()
+
+    if (!asset) {
+      return { success: false, error: "Asset not found" }
+    }
+
+    // Delete from storage
+    await supabase.storage.from("deck-assets").remove([asset.storage_path])
+
+    // Delete from database
+    await supabase
+      .from("deck_assets")
+      .delete()
+      .eq("id", assetId)
+
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: `Failed to delete: ${e}` }
+  }
+}

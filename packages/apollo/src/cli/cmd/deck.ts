@@ -6,9 +6,10 @@ import { cmd } from "./cmd"
 import { UI } from "../ui"
 import open from "open"
 import Anthropic from "@anthropic-ai/sdk"
-import { validateAccessKey, incrementUsage } from "../../deck/supabase"
+import { validateAccessKey, incrementUsage, getAssetsForKey, type Asset } from "../../deck/supabase"
 import { extractPDF, chunkText, isScannedPDF } from "../../util/pdf"
 import { summarizeDocument } from "../../util/summarize"
+import { research } from "../../lib/perplexity"
 
 const DECK_DIR = path.join(os.homedir(), "Apollo", "decks")
 
@@ -35,6 +36,123 @@ function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 50)
+}
+
+// Research tool definition for Claude
+const RESEARCH_TOOL: Anthropic.Tool = {
+  name: "research",
+  description: "Search for real statistics, market data, case studies, and facts. Use this to find compelling, sourced data for your slides. Returns answer with sources.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      query: {
+        type: "string",
+        description: "What to research. Be specific, e.g., 'AI tutoring market size 2024' or 'online education dropout rates statistics'"
+      }
+    },
+    required: ["query"]
+  }
+}
+
+/**
+ * Handle Claude's tool calls in a loop
+ * Keeps going until Claude finishes generating the deck
+ */
+async function runWithTools(
+  anthropic: Anthropic,
+  systemPrompt: string,
+  userMessage: string,
+  maxIterations: number = 10
+): Promise<string> {
+  let messages: Anthropic.MessageParam[] = [
+    { role: "user", content: userMessage }
+  ]
+
+  let iteration = 0
+
+  while (iteration < maxIterations) {
+    iteration++
+
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 16000,
+      system: systemPrompt,
+      tools: [RESEARCH_TOOL],
+      messages
+    })
+
+    // Check if Claude wants to use a tool
+    const toolUseBlocks = response.content.filter(
+      (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
+    )
+
+    // If no tool use, we're done - extract the final response
+    if (toolUseBlocks.length === 0 || response.stop_reason === "end_turn") {
+      // Extract HTML from the final response
+      for (const block of response.content) {
+        if (block.type === "text") {
+          const codeBlockMatch = block.text.match(/```html\s*([\s\S]*?)```/)
+          if (codeBlockMatch) {
+            return codeBlockMatch[1].trim()
+          } else if (block.text.includes("<!DOCTYPE html>")) {
+            return block.text.trim()
+          }
+        }
+      }
+
+      // If we got here but have tool uses, continue the loop
+      if (toolUseBlocks.length > 0) {
+        // Process tool calls
+      } else {
+        throw new Error("Claude did not return valid HTML")
+      }
+    }
+
+    // Add assistant response to messages
+    messages.push({
+      role: "assistant",
+      content: response.content
+    })
+
+    // Process each tool call
+    const toolResults: Anthropic.ToolResultBlockParam[] = []
+
+    for (const toolUse of toolUseBlocks) {
+      if (toolUse.name === "research") {
+        const input = toolUse.input as { query: string }
+        UI.println(UI.Style.TEXT_DIM + `  Researching: ${input.query}...` + UI.Style.TEXT_NORMAL)
+
+        try {
+          const result = await research(input.query)
+          UI.println(UI.Style.TEXT_SUCCESS_BOLD + "  ✓" + UI.Style.TEXT_NORMAL + " Got research data")
+
+          toolResults.push({
+            type: "tool_result",
+            tool_use_id: toolUse.id,
+            content: result
+          })
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          UI.println(UI.Style.TEXT_DANGER + `  ✗ Research failed: ${errorMsg}` + UI.Style.TEXT_NORMAL)
+
+          toolResults.push({
+            type: "tool_result",
+            tool_use_id: toolUse.id,
+            content: `Research failed: ${errorMsg}. Please try a different query or proceed with available data.`,
+            is_error: true
+          })
+        }
+      }
+    }
+
+    // Add tool results to messages
+    messages.push({
+      role: "user",
+      content: toolResults
+    })
+  }
+
+  throw new Error(`Reached max iterations (${maxIterations}) without completing deck`)
 }
 
 export const DeckCommand = cmd({
@@ -89,6 +207,16 @@ export const DeckCommand = cmd({
       process.exit(1)
     }
 
+    // Check Perplexity API key
+    if (!process.env.PERPLEXITY_API_KEY) {
+      UI.error("Perplexity API key required for research")
+      UI.println()
+      UI.println("Set your Perplexity API key:")
+      UI.println(UI.Style.TEXT_INFO_BOLD + "  export PERPLEXITY_API_KEY=pplx-xxxxx" + UI.Style.TEXT_NORMAL)
+      UI.println()
+      process.exit(1)
+    }
+
     // Validate access key
     UI.println(UI.Style.TEXT_DIM + "Validating access key..." + UI.Style.TEXT_NORMAL)
     const validation = await validateAccessKey(accessKey)
@@ -100,6 +228,12 @@ export const DeckCommand = cmd({
 
     const keyData = validation.data!
     UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` Access key valid (${keyData.decks_used}/${keyData.decks_limit} decks used)`)
+
+    // Fetch user's assets
+    const assets = await getAssetsForKey(accessKey)
+    if (assets.length > 0) {
+      UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` ${assets.length} asset(s) available`)
+    }
 
     UI.println()
     UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
@@ -178,55 +312,40 @@ export const DeckCommand = cmd({
     UI.println(UI.Style.TEXT_DIM + "Output: " + UI.Style.TEXT_NORMAL + outputDir)
     UI.println()
 
-    // System prompt is imported at build time
-    const systemPrompt = SYSTEM_PROMPT
+    // Build assets section for prompt
+    let assetsSection = ""
+    if (assets.length > 0) {
+      assetsSection = `
+
+## Available Images
+You have access to the following images. Use them when they're relevant to the slide content:
+
+${assets.map(a => `- **${a.label}**${a.description ? `: ${a.description}` : ""}
+  URL: ${a.public_url}`).join("\n\n")}
+
+When an image fits a slide's content, include it with: <img src="URL" alt="label" class="slide-image">
+`
+    }
 
     // Build user message
     const userMessage = `Create a ${args.slides}-slide pitch deck about: "${topic}"
 
-${documentContext ? "Use the document content provided below as the primary source. Supplement with web search for additional data." : "Use web search to find real statistics, market data, and relevant information."}
-
+${documentContext ? "Use the document content provided below as the primary source. Use the research tool to supplement with additional data." : "Use the research tool to find real statistics, market data, and relevant information. Make 3-5 research calls to gather compelling data."}
+${assetsSection}
 Research thoroughly, then generate the complete HTML file.${documentContext}`
 
     UI.println(UI.Style.TEXT_INFO_BOLD + "Generating deck..." + UI.Style.TEXT_NORMAL)
     UI.println()
 
-    // Call Anthropic API directly
+    // Call Anthropic API with tool support
     const anthropic = new Anthropic()
 
     try {
-      const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 16000,
-        system: systemPrompt,
-        tools: [
-          {
-            type: "web_search_20250305",
-            name: "web_search",
-            max_uses: 10
-          }
-        ],
-        messages: [
-          { role: "user", content: userMessage }
-        ]
-      })
-
-      // Extract HTML from response
-      let html = ""
-      for (const block of response.content) {
-        if (block.type === "text") {
-          // Check if it's wrapped in code blocks
-          const codeBlockMatch = block.text.match(/```html\s*([\s\S]*?)```/)
-          if (codeBlockMatch) {
-            html = codeBlockMatch[1].trim()
-            break // Found HTML, stop looking
-          } else if (block.text.includes("<!DOCTYPE html>")) {
-            // Raw HTML without code blocks
-            html = block.text.trim()
-            break // Found HTML, stop looking
-          }
-        }
-      }
+      const html = await runWithTools(
+        anthropic,
+        SYSTEM_PROMPT,
+        userMessage
+      )
 
       if (!html) {
         UI.error("AI did not return valid HTML")
@@ -235,6 +354,7 @@ Research thoroughly, then generate the complete HTML file.${documentContext}`
 
       // Save HTML file
       fs.writeFileSync(htmlPath, html)
+      UI.println()
       UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + " Deck generated!")
 
       // Increment access key usage
