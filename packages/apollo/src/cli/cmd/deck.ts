@@ -5,16 +5,15 @@ import os from "os"
 import { cmd } from "./cmd"
 import { UI } from "../ui"
 import open from "open"
-import Anthropic from "@anthropic-ai/sdk"
-import { validateAccessKey, incrementUsage, getAssetsForKey, type Asset } from "../../deck/supabase"
+import { getAssetsForKey, type Asset } from "../../deck/supabase"
 import { extractPDF, chunkText, isScannedPDF } from "../../util/pdf"
 import { summarizeDocument } from "../../util/summarize"
-import { research } from "../../lib/perplexity"
 
 const DECK_DIR = path.join(os.homedir(), "Apollo", "decks")
 
-// System prompt is embedded at build time
-import SYSTEM_PROMPT from "../../session/prompt/anthropic.txt"
+// Apollo API endpoint (Supabase Edge Function)
+const APOLLO_API_URL = "https://advpygqokfxmomlumkgl.supabase.co/functions/v1/generate-deck"
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg"
 
 function getNextDeckId(): string {
   if (!fs.existsSync(DECK_DIR)) {
@@ -38,121 +37,54 @@ function slugify(text: string): string {
     .slice(0, 50)
 }
 
-// Research tool definition for Claude
-const RESEARCH_TOOL: Anthropic.Tool = {
-  name: "research",
-  description: "Search for real statistics, market data, case studies, and facts. Use this to find compelling, sourced data for your slides. Returns answer with sources.",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      query: {
-        type: "string",
-        description: "What to research. Be specific, e.g., 'AI tutoring market size 2024' or 'online education dropout rates statistics'"
-      }
-    },
-    required: ["query"]
+interface GenerateDeckResponse {
+  success: boolean
+  html?: string
+  researchQueries?: string[]
+  usage?: {
+    decks_used: number
+    decks_limit: number
   }
+  error?: string
 }
 
 /**
- * Handle Claude's tool calls in a loop
- * Keeps going until Claude finishes generating the deck
+ * Call Apollo API to generate deck
+ * All AI calls happen server-side - user only needs access key
  */
-async function runWithTools(
-  anthropic: Anthropic,
-  systemPrompt: string,
-  userMessage: string,
-  maxIterations: number = 10
-): Promise<string> {
-  let messages: Anthropic.MessageParam[] = [
-    { role: "user", content: userMessage }
-  ]
-
-  let iteration = 0
-
-  while (iteration < maxIterations) {
-    iteration++
-
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 16000,
-      system: systemPrompt,
-      tools: [RESEARCH_TOOL],
-      messages
+async function generateDeckViaAPI(
+  accessKey: string,
+  topic: string,
+  slides: number,
+  documentContext: string,
+  assets: Asset[]
+): Promise<GenerateDeckResponse> {
+  const response = await fetch(APOLLO_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "x-access-key": accessKey
+    },
+    body: JSON.stringify({
+      topic,
+      slides,
+      documentContext,
+      assets: assets.map(a => ({
+        label: a.label,
+        public_url: a.public_url,
+        description: a.description
+      }))
     })
+  })
 
-    // Check if Claude wants to use a tool
-    const toolUseBlocks = response.content.filter(
-      (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
-    )
+  const data = await response.json()
 
-    // If no tool use, we're done - extract the final response
-    if (toolUseBlocks.length === 0 || response.stop_reason === "end_turn") {
-      // Extract HTML from the final response
-      for (const block of response.content) {
-        if (block.type === "text") {
-          const codeBlockMatch = block.text.match(/```html\s*([\s\S]*?)```/)
-          if (codeBlockMatch) {
-            return codeBlockMatch[1].trim()
-          } else if (block.text.includes("<!DOCTYPE html>")) {
-            return block.text.trim()
-          }
-        }
-      }
-
-      // If we got here but have tool uses, continue the loop
-      if (toolUseBlocks.length > 0) {
-        // Process tool calls
-      } else {
-        throw new Error("Claude did not return valid HTML")
-      }
-    }
-
-    // Add assistant response to messages
-    messages.push({
-      role: "assistant",
-      content: response.content
-    })
-
-    // Process each tool call
-    const toolResults: Anthropic.ToolResultBlockParam[] = []
-
-    for (const toolUse of toolUseBlocks) {
-      if (toolUse.name === "research") {
-        const input = toolUse.input as { query: string }
-        UI.println(UI.Style.TEXT_DIM + `  Researching: ${input.query}...` + UI.Style.TEXT_NORMAL)
-
-        try {
-          const result = await research(input.query)
-          UI.println(UI.Style.TEXT_SUCCESS_BOLD + "  ✓" + UI.Style.TEXT_NORMAL + " Got research data")
-
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: toolUse.id,
-            content: result
-          })
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error)
-          UI.println(UI.Style.TEXT_DANGER + `  ✗ Research failed: ${errorMsg}` + UI.Style.TEXT_NORMAL)
-
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: toolUse.id,
-            content: `Research failed: ${errorMsg}. Please try a different query or proceed with available data.`,
-            is_error: true
-          })
-        }
-      }
-    }
-
-    // Add tool results to messages
-    messages.push({
-      role: "user",
-      content: toolResults
-    })
+  if (!response.ok) {
+    return { success: false, error: data.error || `API error: ${response.status}` }
   }
 
-  throw new Error(`Reached max iterations (${maxIterations}) without completing deck`)
+  return data
 }
 
 export const DeckCommand = cmd({
@@ -197,47 +129,27 @@ export const DeckCommand = cmd({
     }
 
     // Check access key
-    const accessKey = process.env.APOLLO_API_KEY
+    const accessKey = process.env.APOLLO_ACCESS_KEY
     if (!accessKey) {
       UI.error("Access key required")
       UI.println()
       UI.println("Set your access key to generate decks:")
-      UI.println(UI.Style.TEXT_INFO_BOLD + "  export APOLLO_API_KEY=sk_xxxxx" + UI.Style.TEXT_NORMAL)
+      UI.println(UI.Style.TEXT_INFO_BOLD + "  export APOLLO_ACCESS_KEY=sk_xxxxx" + UI.Style.TEXT_NORMAL)
+      UI.println()
+      UI.println("Get your access key at: https://apollo.app/keys")
       UI.println()
       process.exit(1)
     }
 
-    // Check Perplexity API key
-    if (!process.env.PERPLEXITY_API_KEY) {
-      UI.error("Perplexity API key required for research")
-      UI.println()
-      UI.println("Set your Perplexity API key:")
-      UI.println(UI.Style.TEXT_INFO_BOLD + "  export PERPLEXITY_API_KEY=pplx-xxxxx" + UI.Style.TEXT_NORMAL)
-      UI.println()
-      process.exit(1)
-    }
-
-    // Validate access key
-    UI.println(UI.Style.TEXT_DIM + "Validating access key..." + UI.Style.TEXT_NORMAL)
-    const validation = await validateAccessKey(accessKey)
-
-    if (!validation.valid) {
-      UI.error(validation.error || "Invalid access key")
-      process.exit(1)
-    }
-
-    const keyData = validation.data!
-    UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` Access key valid (${keyData.decks_used}/${keyData.decks_limit} decks used)`)
+    UI.println()
+    UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
+    UI.println()
 
     // Fetch user's assets
     const assets = await getAssetsForKey(accessKey)
     if (assets.length > 0) {
       UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` ${assets.length} asset(s) available`)
     }
-
-    UI.println()
-    UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
-    UI.println()
 
     // Process PDF file if provided
     let documentContext = ""
@@ -274,10 +186,8 @@ export const DeckCommand = cmd({
         UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + ` PDF loaded: ${pages} pages`)
 
         if (pages <= 50) {
-          // Small PDF: include full text
           documentContext = `\n\n--- DOCUMENT CONTENT ---\nSource: ${metadata.title || path.basename(filePath)}\nPages: ${pages}\n\n${text}\n--- END DOCUMENT ---\n`
         } else {
-          // Large PDF: chunk and summarize
           UI.println(UI.Style.TEXT_DIM + `Processing ${pages} pages...` + UI.Style.TEXT_NORMAL)
 
           const chunks = chunkText(text)
@@ -312,54 +222,39 @@ export const DeckCommand = cmd({
     UI.println(UI.Style.TEXT_DIM + "Output: " + UI.Style.TEXT_NORMAL + outputDir)
     UI.println()
 
-    // Build assets section for prompt
-    let assetsSection = ""
-    if (assets.length > 0) {
-      assetsSection = `
-
-## Available Images
-You have access to the following images. Use them when they're relevant to the slide content:
-
-${assets.map(a => `- **${a.label}**${a.description ? `: ${a.description}` : ""}
-  URL: ${a.public_url}`).join("\n\n")}
-
-When an image fits a slide's content, include it with: <img src="URL" alt="label" class="slide-image">
-`
-    }
-
-    // Build user message
-    const userMessage = `Create a ${args.slides}-slide pitch deck about: "${topic}"
-
-${documentContext ? "Use the document content provided below as the primary source. Use the research tool to supplement with additional data." : "Use the research tool to find real statistics, market data, and relevant information. Make 3-5 research calls to gather compelling data."}
-${assetsSection}
-Research thoroughly, then generate the complete HTML file.${documentContext}`
-
     UI.println(UI.Style.TEXT_INFO_BOLD + "Generating deck..." + UI.Style.TEXT_NORMAL)
     UI.println()
 
-    // Call Anthropic API with tool support
-    const anthropic = new Anthropic()
-
     try {
-      const html = await runWithTools(
-        anthropic,
-        SYSTEM_PROMPT,
-        userMessage
+      const result = await generateDeckViaAPI(
+        accessKey,
+        topic,
+        args.slides,
+        documentContext,
+        assets
       )
 
-      if (!html) {
-        UI.error("AI did not return valid HTML")
+      if (!result.success || !result.html) {
+        UI.error(result.error || "Generation failed")
         process.exit(1)
       }
 
+      // Show research queries
+      if (result.researchQueries && result.researchQueries.length > 0) {
+        for (const query of result.researchQueries) {
+          UI.println(UI.Style.TEXT_DIM + `  Researched: ${query}` + UI.Style.TEXT_NORMAL)
+        }
+        UI.println()
+      }
+
       // Save HTML file
-      fs.writeFileSync(htmlPath, html)
-      UI.println()
+      fs.writeFileSync(htmlPath, result.html)
       UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + " Deck generated!")
 
-      // Increment access key usage
-      await incrementUsage(accessKey)
-      UI.println(UI.Style.TEXT_DIM + `Usage updated: ${keyData.decks_used + 1}/${keyData.decks_limit} decks` + UI.Style.TEXT_NORMAL)
+      // Show usage
+      if (result.usage) {
+        UI.println(UI.Style.TEXT_DIM + `Usage: ${result.usage.decks_used}/${result.usage.decks_limit} decks` + UI.Style.TEXT_NORMAL)
+      }
 
       UI.println()
       UI.println(UI.Style.TEXT_DIM + "File:  " + UI.Style.TEXT_NORMAL + htmlPath)
