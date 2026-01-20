@@ -1,7 +1,9 @@
 /**
- * Perplexity API Client
- * Powers the research tool for Claude - fetches real data with sources
+ * Dual Research Client
+ * Runs both Perplexity and Claude web search in parallel for richer data
  */
+
+import { claudeResearch } from "./claude-research"
 
 export interface PerplexityResponse {
   answer: string
@@ -106,10 +108,51 @@ export function formatResearchResult(result: PerplexityResponse): string {
 }
 
 /**
- * Research a topic and return formatted result
- * Convenience function combining call + format
+ * Research a topic using both Perplexity and Claude in parallel
+ * Returns combined results for richer data
  */
 export async function research(
+  query: string,
+  config?: PerplexityConfig
+): Promise<string> {
+  // Run both research sources in parallel
+  const [perplexityResult, claudeResult] = await Promise.allSettled([
+    callPerplexity(query, config).then(formatResearchResult),
+    claudeResearch(query, { timeout: config?.timeout })
+  ])
+
+  // Combine results
+  const sections: string[] = []
+
+  if (perplexityResult.status === "fulfilled" && perplexityResult.value) {
+    sections.push("## Perplexity Research\n" + perplexityResult.value)
+  } else if (perplexityResult.status === "rejected") {
+    console.warn("Perplexity research failed:", perplexityResult.reason)
+  }
+
+  if (claudeResult.status === "fulfilled" && claudeResult.value) {
+    sections.push("## Claude Research\n" + claudeResult.value)
+  } else if (claudeResult.status === "rejected") {
+    console.warn("Claude research failed:", claudeResult.reason)
+  }
+
+  // If both failed, throw error
+  if (sections.length === 0) {
+    const errors = [
+      perplexityResult.status === "rejected" ? perplexityResult.reason : null,
+      claudeResult.status === "rejected" ? claudeResult.reason : null
+    ].filter(Boolean)
+    throw new Error(`Both research sources failed: ${errors.map(e => e?.message || e).join(", ")}`)
+  }
+
+  return sections.join("\n\n")
+}
+
+/**
+ * Research using only Perplexity (original behavior)
+ * Use this if you only want one source
+ */
+export async function perplexityOnly(
   query: string,
   config?: PerplexityConfig
 ): Promise<string> {
