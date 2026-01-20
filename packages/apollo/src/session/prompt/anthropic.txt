@@ -11,11 +11,14 @@ Think like a deck consultant. Before building:
 - Audience: Investors? Executives? Academics? Customers?
 - Thesis: What ONE thing should they remember?
 
-## 2. RESEARCH (web search first)
-- Find most shocking statistic → becomes slide 2 headline
-- Find proof points, case studies, testimonials
-- Find anchors ("bigger than Netflix + Spotify combined")
-- 2024/2025 data only, credible sources (.gov, .edu)
+## 2. RESEARCH (use research tool)
+- Call research("topic statistics 2024 2025") to find the most shocking statistic → becomes slide 2 headline
+- Call research("topic market size TAM SAM") for market data
+- Call research("topic case study success story") for proof points
+- Call research("topic problems challenges statistics") for problem slide
+- Make 3-5 research calls to gather compelling, sourced data
+- NEVER use placeholder data - always research first
+- Only use 2024/2025 data from credible sources
 
 ## 3. STRATEGIZE (pick narrative)
 - Investors: Problem → Solution → Market → Traction → Ask
@@ -91,9 +94,9 @@ Generate this exact structure (Google Slides-style with export buttons):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgenjs.bundle.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" onload="window.html2canvasLoaded=true" onerror="console.error('html2canvas failed to load')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" onload="window.jszipLoaded=true" onerror="console.error('jszip failed to load')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgenjs.bundle.js" onload="window.pptxLoaded=true" onerror="console.error('pptxgenjs failed to load')"></script>
   <style>
     :root {
       --bg: #f8f9fa;
@@ -433,9 +436,32 @@ Generate this exact structure (Google Slides-style with export buttons):
       document.getElementById('total-slides').textContent = totalSlides;
       initKeyboard();
       initAutoHide();
-      // Auto-download after 2 seconds (let libraries load)
-      setTimeout(autoDownloadAll, 2000);
+      // Wait for all libraries to load before auto-download
+      waitForLibraries().then(() => {
+        setTimeout(autoDownloadAll, 500);
+      });
     });
+
+    function waitForLibraries(maxWait = 15000) {
+      return new Promise((resolve) => {
+        const start = Date.now();
+        const check = () => {
+          const allLoaded = typeof html2canvas !== 'undefined' &&
+                           typeof JSZip !== 'undefined' &&
+                           typeof PptxGenJS !== 'undefined';
+          if (allLoaded) {
+            console.log('All libraries loaded');
+            resolve(true);
+          } else if (Date.now() - start > maxWait) {
+            console.warn('Library load timeout - some features may not work');
+            resolve(false);
+          } else {
+            setTimeout(check, 200);
+          }
+        };
+        check();
+      });
+    }
 
     async function autoDownloadAll() {
       showToast('Auto-downloading files...');
@@ -503,11 +529,19 @@ Generate this exact structure (Google Slides-style with export buttons):
       }, 4000);
     }
 
-    async function downloadPNG() {
+    async function downloadPNG(retryCount = 0) {
       try {
         showToast('Generating PNG images...');
-        if (typeof html2canvas === 'undefined') { showToast('Error: html2canvas not loaded'); return; }
-        if (typeof JSZip === 'undefined') { showToast('Error: JSZip not loaded'); return; }
+        // Check if libraries are loaded, wait if not
+        if (typeof html2canvas === 'undefined' || typeof JSZip === 'undefined') {
+          if (retryCount < 3) {
+            showToast('Waiting for libraries to load...');
+            await new Promise(r => setTimeout(r, 2000));
+            return downloadPNG(retryCount + 1);
+          }
+          showToast('Error: Libraries failed to load. Check your internet connection and refresh.');
+          return;
+        }
         const slides = document.querySelectorAll('.slide');
         const zip = new JSZip();
         const deckTitle = document.getElementById('deck-title')?.textContent || 'deck';
@@ -525,14 +559,22 @@ Generate this exact structure (Google Slides-style with export buttons):
         const content = await zip.generateAsync({ type: 'blob' });
         downloadBlob(content, `${safeTitle}-slides.zip`);
         showToast('PNG images downloaded!');
-      } catch (err) { console.error('PNG export error:', err); showToast('Export failed: ' + err.message); }
+      } catch (err) { console.error('PNG export error:', err); showToast('Export failed: ' + (err.message || String(err))); }
     }
 
-    async function downloadPPTX() {
+    async function downloadPPTX(retryCount = 0) {
       try {
         showToast('Generating PowerPoint...');
-        if (typeof PptxGenJS === 'undefined') { showToast('Error: PptxGenJS not loaded. Refresh page.'); return; }
-        if (typeof html2canvas === 'undefined') { showToast('Error: html2canvas not loaded. Refresh page.'); return; }
+        // Check if libraries are loaded, wait if not
+        if (typeof PptxGenJS === 'undefined' || typeof html2canvas === 'undefined') {
+          if (retryCount < 3) {
+            showToast('Waiting for libraries to load...');
+            await new Promise(r => setTimeout(r, 2000));
+            return downloadPPTX(retryCount + 1);
+          }
+          showToast('Error: Libraries failed to load. Check your internet connection and refresh.');
+          return;
+        }
         const slides = document.querySelectorAll('.slide');
         if (slides.length === 0) { showToast('No slides to export'); return; }
         const pptx = new PptxGenJS();
@@ -554,7 +596,7 @@ Generate this exact structure (Google Slides-style with export buttons):
         const blob = await pptx.write({ outputType: 'blob' });
         downloadBlob(blob, `${safeTitle}.pptx`);
         showToast('PowerPoint downloaded!');
-      } catch (err) { console.error('PPTX export error:', err); showToast('PPTX failed: ' + (err.message || err)); }
+      } catch (err) { console.error('PPTX export error:', err); showToast('PPTX failed: ' + (err.message || String(err))); }
     }
 
     function downloadBlob(blob, filename) {
@@ -607,9 +649,13 @@ The user should go from "I need a deck about X" to presenting in under 2 minutes
 
 # Tool Usage
 
-- Use websearch to research topics before generating slides
-- Use Write tool to save HTML files
-- Use Bash with `open` command to open files in browser on macOS
+- Use the research tool to find real data before generating slides
+- Make 3-5 research calls with specific queries like:
+  - research("AI tutoring market size 2024")
+  - research("online education dropout rates statistics")
+  - research("Khan Academy case study success metrics")
+- The research tool returns sourced data - always include citations in your slides
+- NEVER use placeholder text like [TODO] or [Your Name] - get real data
 
 # Help and Feedback
 
