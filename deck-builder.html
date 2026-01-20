@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apollo | AI Deck Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    :root {
+      --apollo-gold: #F5A623;
+      --apollo-amber: #FFBE0B;
+      --apollo-orange: #FB5607;
+      --apollo-purple: #8338EC;
+      --apollo-violet: #3A0CA3;
+      --apollo-deep: #10002B;
+      --apollo-surface: rgba(255, 255, 255, 0.03);
+      --apollo-surface-hover: rgba(255, 255, 255, 0.06);
+      --apollo-border: rgba(255, 255, 255, 0.08);
+      --apollo-glow: rgba(245, 166, 35, 0.15);
+      --text-primary: #FFFFFF;
+      --text-secondary: rgba(255, 255, 255, 0.7);
+      --text-muted: rgba(255, 255, 255, 0.4);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--apollo-deep);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* Cosmic Background */
+    .cosmic-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .cosmic-bg::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(131, 56, 236, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 90% 100%, rgba(251, 86, 7, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 10% 80%, rgba(58, 12, 163, 0.2) 0%, transparent 50%),
+        linear-gradient(180deg, #10002B 0%, #1a0a2e 50%, #0d0015 100%);
+    }
+
+    /* Animated Orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(245, 166, 35, 0.12) 0%, transparent 70%);
+      top: -200px;
+      right: -100px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(131, 56, 236, 0.15) 0%, transparent 70%);
+      bottom: -150px;
+      left: -100px;
+      animation-delay: -7s;
+    }
+
+    .orb-3 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(251, 86, 7, 0.1) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: -14s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -30px) scale(1.05); }
+      50% { transform: translate(-20px, 20px) scale(0.95); }
+      75% { transform: translate(20px, 30px) scale(1.02); }
+    }
+
+    /* Stars */
+    .stars {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 70%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 20%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 60% 50%, rgba(245,166,35,0.9) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 90% 40%, rgba(131,56,236,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 15% 60%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 25% 90%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 70%, rgba(255,255,255,0.4) 0%, transparent 100%);
+      animation: twinkle 8s ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Main Container */
+    .app-container {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--apollo-border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      position: relative;
+      width: 48px;
+      height: 48px;
+    }
+
+    .logo-icon::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      background: conic-gradient(from 0deg, var(--apollo-gold), var(--apollo-orange), var(--apollo-purple), var(--apollo-gold));
+      border-radius: 16px;
+      animation: rotate 4s linear infinite;
+      opacity: 0.6;
+    }
+
+    .logo-icon-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--apollo-gold) 0%, var(--apollo-orange) 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 24px rgba(245, 166, 35, 0.3);
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-subtitle {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-btn {
+      padding: 10px 16px;
+      background: var(--apollo-surface);
+      border: 1px solid var(--apollo-border);
+      border-radius: 10px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-btn:hover {
+      background: var(--apollo-surface-hover);
+      border-color: rgba(255,255,255,0.15);
+      color: var(--text-primary);
+    }
+
+    /* Chat Area */
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+
+    .chat-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat-container::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+
+    /* Messages */
+    .message {
+      display: flex;
+      gap: 16px;
+      animation: messageIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
+    @keyframes messageIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .avatar.assistant {
+      background: linear-gradient(135deg, var(--apollo-gold) 0%, var(--apollo-orange) 100%);
+      box-shadow: 0 4px 20px rgba(245, 166, 35, 0.25);
+    }
+
+    .avatar.user {
+      background: var(--apollo-surface);
+      border: 1px solid var(--apollo-border);
+    }
+
+    .bubble {
+      max-width: 75%;
+      padding: 20px 24px;
+      border-radius: 20px;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .message.assistant .bubble {
+      background: var(--apollo-surface);
+      border: 1px solid var(--apollo-border);
+      border-bottom-left-radius: 6px;
+      backdrop-filter: blur(20px);
+    }
+
+    .message.user .bubble {
+      background: linear-gradient(135deg, var(--apollo-purple) 0%, var(--apollo-violet) 100%);
+      border-bottom-right-radius: 6px;
+      box-shadow: 0 4px 24px rgba(131, 56, 236, 0.3);
+    }
+
+    /* Options */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .option-card {
+      padding: 16px 20px;
+      background: var(--apollo-surface);
+      border: 1px solid var(--apollo-border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .option-card:hover {
+      background: var(--apollo-surface-hover);
+      border-color: var(--apollo-gold);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(245, 166, 35, 0.15);
+    }
+
+    .option-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(245, 166, 35, 0.15) 0%, rgba(251, 86, 7, 0.1) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--apollo-gold);
+    }
+
+    .option-text {
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    /* Slider */
+    .slider-section {
+      margin-top: 24px;
+      padding: 24px;
+      background: var(--apollo-surface);
+      border: 1px solid var(--apollo-border);
+      border-radius: 16px;
+    }
+
+    .slider-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .slider-wrapper {
+      position: relative;
+      padding: 0 8px;
+    }
+
+    .slider-track {
+      position: relative;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: visible;
+    }
+
+    .slider-fill {
+      position: absolute;
+      height: 100%;
+      background: linear-gradient(90deg, var(--apollo-gold), var(--apollo-orange));
+      border-radius: 3px;
+      transition: width 0.1s;
+    }
+
+    .slider-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .slider-thumb {
+      position: absolute;
+      top: 50%;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--apollo-gold), var(--apollo-orange));
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 2px 12px rgba(245, 166, 35, 0.4);
+      pointer-events: none;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+
+    .slider-input:hover + .slider-track .slider-thumb,
+    .slider-input:focus + .slider-track .slider-thumb {
+      transform: translate(-50%, -50%) scale(1.1);
+      box-shadow: 0 4px 20px rgba(245, 166, 35, 0.5);
+    }
+
+    .slider-value-display {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .slider-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--apollo-gold), var(--apollo-orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .slider-unit {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    /* Generate Button */
+    .generate-btn {
+      width: 100%;
+      padding: 18px 32px;
+      margin-top: 24px;
+      background: linear-gradient(135deg, var(--apollo-gold) 0%, var(--apollo-orange) 100%);
+      border: none;
+      border-radius: 14px;
+      color: var(--apollo-deep);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .generate-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--apollo-amber) 0%, var(--apollo-gold) 100%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(245, 166, 35, 0.4);
+    }
+
+    .generate-btn:hover::before {
+      opacity: 1;
+    }
+
+    .generate-btn span {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Input Area */
+    .input-area {
+      padding: 20px 0 24px;
+      border-top: 1px solid var(--apollo-border);
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 12px;
+      padding: 8px;
+      background: var(--apollo-surface);
+      border: 1px solid var(--apollo-border);
+      border-radius: 16px;
+      transition: all 0.3s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--apollo-gold);
+      box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.1);
+    }
+
+    .input-wrapper textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      line-height: 1.5;
+    }
+
+    .input-wrapper textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input-wrapper textarea:focus {
+      outline: none;
+    }
+
+    .send-btn {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--apollo-gold) 0%, var(--apollo-orange) 100%);
+      border: none;
+      border-radius: 12px;
+      color: var(--apollo-deep);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(245, 166, 35, 0.35);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Loading Animation */
+    .loading-dots {
+      display: flex;
+      gap: 6px;
+      padding: 8px 0;
+    }
+
+    .loading-dots span {
+      width: 8px;
+      height: 8px;
+      background: var(--apollo-gold);
+      border-radius: 50%;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    .loading-dots span:nth-child(1) { animation-delay: 0s; }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Preview */
+    .preview-frame {
+      margin-top: 20px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--apollo-border);
+      background: #fff;
+    }
+
+    .preview-frame iframe {
+      width: 100%;
+      height: 400px;
+      border: none;
+    }
+
+    .preview-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, var(--apollo-gold), var(--apollo-orange));
+      border: none;
+      color: var(--apollo-deep);
+    }
+
+    .action-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(245, 166, 35, 0.35);
+    }
+
+    .action-btn.secondary {
+      background: var(--apollo-surface);
+      border: 1px solid var(--apollo-border);
+      color: var(--text-primary);
+    }
+
+    .action-btn.secondary:hover {
+      background: var(--apollo-surface-hover);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(16, 0, 43, 0.9);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 24px;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 440px;
+      background: linear-gradient(180deg, rgba(30, 20, 50, 0.95) 0%, rgba(20, 10, 35, 0.98) 100%);
+      border: 1px solid var(--apollo-border);
+      border-radius: 24px;
+      padding: 40px;
+      animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, var(--apollo-gold), var(--apollo-orange));
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(245, 166, 35, 0.3);
+    }
+
+    .modal h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .modal p {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 16px 20px;
+      background: var(--apollo-surface);
+      border: 1px solid var(--apollo-border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-family: 'Space Grotesk', monospace;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      transition: all 0.3s;
+    }
+
+    .modal-input:focus {
+      outline: none;
+      border-color: var(--apollo-gold);
+      box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.1);
+    }
+
+    .modal-input::placeholder {
+      color: var(--text-muted);
+      letter-spacing: 0;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--apollo-gold), var(--apollo-orange));
+      border: none;
+      border-radius: 12px;
+      color: var(--apollo-deep);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .modal-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(245, 166, 35, 0.35);
+    }
+
+    .modal-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .modal-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: var(--apollo-gold);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .modal-link:hover {
+      color: var(--apollo-amber);
+    }
+
+    /* Utility */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .options-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .bubble {
+        max-width: 85%;
+      }
+
+      .header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Cosmic Background -->
+  <div class="cosmic-bg">
+    <div class="stars"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Access Key Modal -->
+  <div class="modal-overlay" id="keyModal">
+    <div class="modal">
+      <div class="modal-icon">
+        <i data-lucide="sun" style="width: 36px; height: 36px; color: #10002B;"></i>
+      </div>
+      <h2>Welcome to Apollo</h2>
+      <p>Enter your access key to start creating stunning AI-powered presentations in seconds.</p>
+      <input type="password" class="modal-input" id="accessKeyInput" placeholder="sk_xxxxx" />
+      <button class="modal-btn" id="saveKeyBtn" disabled>
+        <span>Illuminate Your Ideas</span>
+      </button>
+      <a href="https://apollo.app/keys" target="_blank" class="modal-link">Get your free access key</a>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <div class="logo-icon-inner">
+            <i data-lucide="sun" style="width: 24px; height: 24px; color: #10002B;"></i>
+          </div>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title">Apollo</span>
+          <span class="logo-subtitle">Deck Builder</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="header-btn" onclick="resetConversation()">
+          <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+          New Deck
+        </button>
+      </div>
+    </header>
+
+    <!-- Chat -->
+    <div class="chat-container" id="chatContainer"></div>
+
+    <!-- Input -->
+    <div class="input-area" id="inputArea">
+      <div class="input-wrapper">
+        <textarea id="userInput" placeholder="Describe your presentation idea..." rows="1"></textarea>
+        <button class="send-btn" id="sendBtn">
+          <i data-lucide="arrow-up" style="width: 22px; height: 22px;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide
+    lucide.createIcons();
+
+    // State
+    let accessKey = localStorage.getItem('apollo_access_key') || '';
+    let currentStep = 'welcome';
+    let deckData = { topic: '', slides: 7, generatedHtml: null };
+
+    // Elements
+    const chatContainer = document.getElementById('chatContainer');
+    const inputArea = document.getElementById('inputArea');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const keyModal = document.getElementById('keyModal');
+    const accessKeyInput = document.getElementById('accessKeyInput');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+
+    // API
+    const API_URL = 'https://advpygqokfxmomlumkgl.supabase.co/functions/v1/generate-deck';
+    const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg';
+
+    // Init
+    if (accessKey) {
+      keyModal.classList.add('hidden');
+      startConversation();
+    }
+
+    // Key Modal
+    accessKeyInput.addEventListener('input', () => {
+      saveKeyBtn.disabled = accessKeyInput.value.trim().length < 5;
+    });
+
+    saveKeyBtn.addEventListener('click', () => {
+      accessKey = accessKeyInput.value.trim();
+      localStorage.setItem('apollo_access_key', accessKey);
+      keyModal.classList.add('hidden');
+      startConversation();
+    });
+
+    // Add Message
+    function addMessage(content, isUser = false) {
+      const msg = document.createElement('div');
+      msg.className = `message ${isUser ? 'user' : 'assistant'}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = `avatar ${isUser ? 'user' : 'assistant'}`;
+      avatar.innerHTML = isUser
+        ? '<i data-lucide="user" style="width: 20px; height: 20px; color: rgba(255,255,255,0.6);"></i>'
+        : '<i data-lucide="sun" style="width: 20px; height: 20px; color: #10002B;"></i>';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+
+      if (typeof content === 'string') {
+        bubble.innerHTML = content;
+      } else {
+        bubble.appendChild(content);
+      }
+
+      msg.appendChild(avatar);
+      msg.appendChild(bubble);
+      chatContainer.appendChild(msg);
+
+      lucide.createIcons();
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      return bubble;
+    }
+
+    // Loading
+    function showLoading() {
+      const loading = document.createElement('div');
+      loading.className = 'loading-dots';
+      loading.id = 'loadingDots';
+      loading.innerHTML = '<span></span><span></span><span></span>';
+
+      const msg = document.createElement('div');
+      msg.className = 'message assistant';
+      msg.id = 'loadingMsg';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar assistant';
+      avatar.innerHTML = '<i data-lucide="sun" style="width: 20px; height: 20px; color: #10002B;"></i>';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.appendChild(loading);
+
+      msg.appendChild(avatar);
+      msg.appendChild(bubble);
+      chatContainer.appendChild(msg);
+      lucide.createIcons();
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function hideLoading() {
+      const el = document.getElementById('loadingMsg');
+      if (el) el.remove();
+    }
+
+    // Start
+    function startConversation() {
+      setTimeout(() => {
+        const content = document.createElement('div');
+        content.innerHTML = `
+          <div style="margin-bottom: 8px;">Hey there! I'm Apollo, your AI presentation assistant. ☀️</div>
+          <div>What kind of deck would you like to create today?</div>
+          <div class="options-grid">
+            <div class="option-card" onclick="selectType('startup pitch deck')">
+              <div class="option-icon"><i data-lucide="rocket" style="width: 20px; height: 20px;"></i></div>
+              <span class="option-text">Startup Pitch</span>
+            </div>
+            <div class="option-card" onclick="selectType('business plan presentation')">
+              <div class="option-icon"><i data-lucide="briefcase" style="width: 20px; height: 20px;"></i></div>
+              <span class="option-text">Business Plan</span>
+            </div>
+            <div class="option-card" onclick="selectType('product launch presentation')">
+              <div class="option-icon"><i data-lucide="package" style="width: 20px; height: 20px;"></i></div>
+              <span class="option-text">Product Launch</span>
+            </div>
+            <div class="option-card" onclick="selectType('sales presentation')">
+              <div class="option-icon"><i data-lucide="trending-up" style="width: 20px; height: 20px;"></i></div>
+              <span class="option-text">Sales Deck</span>
+            </div>
+          </div>
+        `;
+        addMessage(content);
+        currentStep = 'topic';
+      }, 300);
+    }
+
+    // Select Type
+    function selectType(type) {
+      addMessage(type, true);
+      setTimeout(() => {
+        addMessage("Great choice! Tell me more about it. What's the main topic, company, or idea you want to present?");
+        currentStep = 'details';
+      }, 400);
+    }
+
+    // Slide Count
+    function askSlideCount() {
+      const content = document.createElement('div');
+      content.innerHTML = `
+        <div>How many slides would you like?</div>
+        <div class="slider-section">
+          <div class="slider-label">Number of Slides</div>
+          <div class="slider-wrapper">
+            <input type="range" class="slider-input" id="slideSlider" min="3" max="15" value="7">
+            <div class="slider-track">
+              <div class="slider-fill" id="sliderFill" style="width: 33.33%"></div>
+              <div class="slider-thumb" id="sliderThumb" style="left: 33.33%"></div>
+            </div>
+          </div>
+          <div class="slider-value-display">
+            <span class="slider-number" id="slideNum">7</span>
+            <span class="slider-unit">slides</span>
+          </div>
+        </div>
+        <button class="generate-btn" onclick="generateDeck()">
+          <span>
+            <i data-lucide="sparkles" style="width: 20px; height: 20px;"></i>
+            Generate My Deck
+          </span>
+        </button>
+      `;
+      addMessage(content);
+
+      setTimeout(() => {
+        const slider = document.getElementById('slideSlider');
+        const fill = document.getElementById('sliderFill');
+        const thumb = document.getElementById('sliderThumb');
+        const num = document.getElementById('slideNum');
+
+        slider.addEventListener('input', () => {
+          const val = slider.value;
+          const pct = ((val - 3) / 12) * 100;
+          fill.style.width = pct + '%';
+          thumb.style.left = pct + '%';
+          num.textContent = val;
+          deckData.slides = parseInt(val);
+        });
+
+        lucide.createIcons();
+      }, 50);
+
+      currentStep = 'slides';
+    }
+
+    // Generate
+    async function generateDeck() {
+      addMessage(`Generate ${deckData.slides}-slide presentation`, true);
+      showLoading();
+      inputArea.classList.add('hidden');
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`,
+            'x-access-key': accessKey
+          },
+          body: JSON.stringify({
+            topic: deckData.topic,
+            slides: deckData.slides,
+            documentContext: '',
+            assets: []
+          })
+        });
+
+        const data = await res.json();
+        hideLoading();
+
+        if (!data.success || !data.html) {
+          throw new Error(data.error || 'Generation failed');
+        }
+
+        deckData.generatedHtml = data.html;
+        showPreview(data.html);
+
+      } catch (err) {
+        hideLoading();
+        const errContent = document.createElement('div');
+        errContent.innerHTML = `
+          <div style="margin-bottom: 12px;">Oops! Something went wrong: ${err.message}</div>
+          <div class="options-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="option-card" onclick="generateDeck()">
+              <div class="option-icon"><i data-lucide="refresh-cw" style="width: 18px; height: 18px;"></i></div>
+              <span class="option-text">Try Again</span>
+            </div>
+            <div class="option-card" onclick="resetConversation()">
+              <div class="option-icon"><i data-lucide="home" style="width: 18px; height: 18px;"></i></div>
+              <span class="option-text">Start Over</span>
+            </div>
+          </div>
+        `;
+        addMessage(errContent);
+        inputArea.classList.remove('hidden');
+      }
+    }
+
+    // Preview
+    function showPreview(html) {
+      const content = document.createElement('div');
+      content.innerHTML = `
+        <div style="margin-bottom: 12px;">Your presentation is ready! Here's a preview:</div>
+        <div class="preview-frame">
+          <iframe id="previewIframe"></iframe>
+        </div>
+        <div class="preview-actions">
+          <button class="action-btn secondary" onclick="resetConversation()">
+            <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
+            New Deck
+          </button>
+          <button class="action-btn primary" onclick="downloadDeck()">
+            <i data-lucide="download" style="width: 18px; height: 18px;"></i>
+            Download
+          </button>
+        </div>
+      `;
+      addMessage(content);
+
+      setTimeout(() => {
+        document.getElementById('previewIframe').srcdoc = html;
+        lucide.createIcons();
+      }, 50);
+
+      currentStep = 'done';
+    }
+
+    // Download
+    function downloadDeck() {
+      if (!deckData.generatedHtml) return;
+      const blob = new Blob([deckData.generatedHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${deckData.topic.slice(0, 30).replace(/[^a-z0-9]/gi, '-')}-apollo-deck.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Reset
+    function resetConversation() {
+      chatContainer.innerHTML = '';
+      deckData = { topic: '', slides: 7, generatedHtml: null };
+      inputArea.classList.remove('hidden');
+      startConversation();
+    }
+
+    // Handle Input
+    function handleInput() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      addMessage(text, true);
+      userInput.value = '';
+      userInput.style.height = 'auto';
+
+      if (currentStep === 'details') {
+        deckData.topic = text;
+        setTimeout(() => askSlideCount(), 400);
+      }
+    }
+
+    sendBtn.addEventListener('click', handleInput);
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleInput();
+      }
+    });
+
+    userInput.addEventListener('input', () => {
+      userInput.style.height = 'auto';
+      userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+    });
+  </script>
+</body>
+</html>

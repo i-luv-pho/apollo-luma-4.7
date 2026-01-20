@@ -2,7 +2,7 @@ import { createMemo, For, Match, Show, Switch } from "solid-js"
 import { Button } from "@apollo-ai/ui/button"
 import { Logo } from "@apollo-ai/ui/logo"
 import { useLayout } from "@/context/layout"
-import { useNavigate } from "@solidjs/router"
+import { useNavigate, A } from "@solidjs/router"
 import { base64Encode } from "@apollo-ai/util/encode"
 import { Icon } from "@apollo-ai/ui/icon"
 import { usePlatform } from "@/context/platform"
@@ -56,6 +56,17 @@ export default function Home() {
   return (
     <div class="mx-auto mt-55 w-full md:w-auto px-4">
       <Logo class="md:w-xl opacity-12" />
+      {/* Deck Builder CTA */}
+      <A href="/deck" class="block mt-6">
+        <Button
+          size="large"
+          variant="ghost"
+          class="mx-auto text-14-medium text-text-interactive-base hover:text-text-interactive-hover flex items-center gap-2"
+        >
+          <Icon name="brain" size="small" />
+          Create AI Deck
+        </Button>
+      </A>
       <Button
         size="large"
         variant="ghost"

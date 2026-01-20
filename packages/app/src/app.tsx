@@ -29,6 +29,7 @@ import { Suspense } from "solid-js"
 
 const Home = lazy(() => import("@/pages/home"))
 const Session = lazy(() => import("@/pages/session"))
+const DeckBuilder = lazy(() => import("@/pages/deck"))
 const Loading = () => <div class="size-full" />
 
 declare global {
@@ -98,6 +99,14 @@ export function AppInterface(props: { defaultUrl?: string }) {
                 component={() => (
                   <Suspense fallback={<Loading />}>
                     <Home />
+                  </Suspense>
+                )}
+              />
+              <Route
+                path="/deck"
+                component={() => (
+                  <Suspense fallback={<Loading />}>
+                    <DeckBuilder />
                   </Suspense>
                 )}
               />
