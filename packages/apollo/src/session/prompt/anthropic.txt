@@ -183,6 +183,8 @@ Generate this exact structure (Google Slides-style with export buttons):
     }
 
     .btn-secondary:hover { background: var(--bg); border-color: var(--text-dim); }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary:disabled:hover { background: transparent; border-color: var(--border); }
 
     .btn-icon { width: 18px; height: 18px; opacity: 0.9; }
 
@@ -538,42 +540,59 @@ Generate this exact structure (Google Slides-style with export buttons):
       const savedTheme = localStorage.getItem('deck-theme') || 'white';
       document.getElementById('theme-selector').value = savedTheme;
       changeTheme(savedTheme);
-      // Wait for all libraries to load before auto-download
-      waitForLibraries().then(() => {
-        setTimeout(autoDownloadAll, 500);
-      });
+      // Check library status and show indicator
+      checkLibraryStatus();
     });
 
-    function waitForLibraries(maxWait = 15000) {
-      return new Promise((resolve) => {
+    function checkLibraryStatus() {
+      const check = () => {
+        const html2canvasOK = typeof html2canvas !== 'undefined';
+        const jszipOK = typeof JSZip !== 'undefined';
+        const pptxOK = typeof PptxGenJS !== 'undefined';
+        const allLoaded = html2canvasOK && jszipOK && pptxOK;
+
+        // Update button states
+        const pngBtn = document.querySelector('button[onclick="downloadPNG()"]');
+        const pptxBtn = document.querySelector('button[onclick="downloadPPTX()"]');
+
+        if (allLoaded) {
+          if (pngBtn) pngBtn.disabled = false;
+          if (pptxBtn) pptxBtn.disabled = false;
+          console.log('All export libraries ready');
+        } else {
+          if (pngBtn) pngBtn.disabled = true;
+          if (pptxBtn) pptxBtn.disabled = true;
+          // Keep checking
+          setTimeout(check, 500);
+        }
+      };
+      check();
+      // Timeout after 20 seconds
+      setTimeout(() => {
+        const allLoaded = typeof html2canvas !== 'undefined' && typeof JSZip !== 'undefined' && typeof PptxGenJS !== 'undefined';
+        if (!allLoaded) {
+          showToast('Some export features may not work. Try refreshing the page.');
+        }
+      }, 20000);
+    }
+
+    function waitForLibraries(maxWait = 20000) {
+      return new Promise((resolve, reject) => {
         const start = Date.now();
         const check = () => {
           const allLoaded = typeof html2canvas !== 'undefined' &&
                            typeof JSZip !== 'undefined' &&
                            typeof PptxGenJS !== 'undefined';
           if (allLoaded) {
-            console.log('All libraries loaded');
             resolve(true);
           } else if (Date.now() - start > maxWait) {
-            console.warn('Library load timeout - some features may not work');
-            resolve(false);
+            reject(new Error('Libraries failed to load. Please refresh the page.'));
           } else {
-            setTimeout(check, 200);
+            setTimeout(check, 300);
           }
         };
         check();
       });
-    }
-
-    async function autoDownloadAll() {
-      showToast('Auto-downloading files...');
-      try {
-        await downloadPNG();
-        await downloadPPTX();
-        showToast('Downloads complete!');
-      } catch (err) {
-        console.error('Auto-download error:', err);
-      }
     }
 
     function showSlide(num) {
@@ -631,55 +650,86 @@ Generate this exact structure (Google Slides-style with export buttons):
       }, 4000);
     }
 
-    async function downloadPNG(retryCount = 0) {
+    async function downloadPNG() {
       try {
-        showToast('Generating PNG images...');
-        // Check if libraries are loaded, wait if not
-        if (typeof html2canvas === 'undefined' || typeof JSZip === 'undefined') {
-          if (retryCount < 3) {
-            showToast('Waiting for libraries to load...');
-            await new Promise(r => setTimeout(r, 2000));
-            return downloadPNG(retryCount + 1);
-          }
-          showToast('Error: Libraries failed to load. Check your internet connection and refresh.');
+        // Wait for libraries first
+        showToast('Preparing export...');
+        try {
+          await waitForLibraries(10000);
+        } catch (e) {
+          showToast('Export libraries not loaded. Please refresh the page and try again.');
           return;
         }
+
+        showToast('Generating PNG images...');
         const slides = document.querySelectorAll('.slide');
+        if (slides.length === 0) { showToast('No slides to export'); return; }
+
         const zip = new JSZip();
         const deckTitle = document.getElementById('deck-title')?.textContent || 'deck';
-        const safeTitle = deckTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+        const safeTitle = deckTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) || 'slides';
         const bgColor = themeBackgrounds[getCurrentTheme()];
+
         for (let i = 0; i < slides.length; i++) {
           const slide = slides[i];
           showToast(`Capturing slide ${i + 1} of ${slides.length}...`);
-          slide.style.cssText = 'position:fixed;top:0;left:0;width:1280px;height:720px;transform:none;opacity:1;z-index:-1;';
-          const canvas = await html2canvas(slide, { scale: 2, useCORS: true, backgroundColor: bgColor, width: 1280, height: 720 });
-          slide.style.cssText = '';
-          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-          zip.file(`slide-${String(i + 1).padStart(2, '0')}.png`, blob);
+
+          // Save original styles
+          const originalStyle = slide.getAttribute('style') || '';
+
+          // Position slide for capture
+          slide.style.cssText = 'position:fixed;top:0;left:0;width:1280px;height:720px;transform:none;opacity:1;z-index:9999;pointer-events:none;';
+
+          try {
+            const canvas = await html2canvas(slide, {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: bgColor,
+              width: 1280,
+              height: 720,
+              logging: false
+            });
+
+            const blob = await new Promise((resolve, reject) => {
+              canvas.toBlob(blob => {
+                if (blob) resolve(blob);
+                else reject(new Error('Failed to create image blob'));
+              }, 'image/png', 1.0);
+            });
+
+            zip.file(`slide-${String(i + 1).padStart(2, '0')}.png`, blob);
+          } finally {
+            // Always restore original style
+            slide.setAttribute('style', originalStyle);
+          }
         }
+
         showToast('Creating ZIP file...');
-        const content = await zip.generateAsync({ type: 'blob' });
+        const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
         downloadBlob(content, `${safeTitle}-slides.zip`);
-        showToast('PNG images downloaded!');
-      } catch (err) { console.error('PNG export error:', err); showToast('Export failed: ' + (err.message || String(err))); }
+        showToast('PNG download complete!');
+      } catch (err) {
+        console.error('PNG export error:', err);
+        showToast('PNG export failed: ' + (err.message || 'Unknown error. Please refresh and try again.'));
+      }
     }
 
-    async function downloadPPTX(retryCount = 0) {
+    async function downloadPPTX() {
       try {
-        showToast('Generating PowerPoint...');
-        // Check if libraries are loaded, wait if not
-        if (typeof PptxGenJS === 'undefined' || typeof html2canvas === 'undefined') {
-          if (retryCount < 3) {
-            showToast('Waiting for libraries to load...');
-            await new Promise(r => setTimeout(r, 2000));
-            return downloadPPTX(retryCount + 1);
-          }
-          showToast('Error: Libraries failed to load. Check your internet connection and refresh.');
+        // Wait for libraries first
+        showToast('Preparing export...');
+        try {
+          await waitForLibraries(10000);
+        } catch (e) {
+          showToast('Export libraries not loaded. Please refresh the page and try again.');
           return;
         }
+
+        showToast('Generating PowerPoint...');
         const slides = document.querySelectorAll('.slide');
         if (slides.length === 0) { showToast('No slides to export'); return; }
+
         const pptx = new PptxGenJS();
         pptx.layout = 'LAYOUT_16x9';
         const deckTitle = document.getElementById('deck-title')?.textContent || 'Presentation';
@@ -687,20 +737,50 @@ Generate this exact structure (Google Slides-style with export buttons):
         pptx.author = 'Deck by Apollo';
         const safeTitle = deckTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) || 'presentation';
         const bgColor = themeBackgrounds[getCurrentTheme()];
+
         for (let i = 0; i < slides.length; i++) {
           const slide = slides[i];
           showToast(`Converting slide ${i + 1} of ${slides.length}...`);
-          slide.style.cssText = 'position:fixed;top:0;left:0;width:1280px;height:720px;transform:none;opacity:1;z-index:-1;';
-          const canvas = await html2canvas(slide, { scale: 2, useCORS: true, backgroundColor: bgColor, width: 1280, height: 720 });
-          slide.style.cssText = '';
-          const pptxSlide = pptx.addSlide();
-          pptxSlide.addImage({ data: canvas.toDataURL('image/png'), x: 0, y: 0, w: '100%', h: '100%' });
+
+          // Save original styles
+          const originalStyle = slide.getAttribute('style') || '';
+
+          // Position slide for capture
+          slide.style.cssText = 'position:fixed;top:0;left:0;width:1280px;height:720px;transform:none;opacity:1;z-index:9999;pointer-events:none;';
+
+          try {
+            const canvas = await html2canvas(slide, {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: bgColor,
+              width: 1280,
+              height: 720,
+              logging: false
+            });
+
+            const pptxSlide = pptx.addSlide();
+            pptxSlide.addImage({
+              data: canvas.toDataURL('image/png', 1.0),
+              x: 0,
+              y: 0,
+              w: '100%',
+              h: '100%'
+            });
+          } finally {
+            // Always restore original style
+            slide.setAttribute('style', originalStyle);
+          }
         }
+
         showToast('Saving PowerPoint file...');
         const blob = await pptx.write({ outputType: 'blob' });
         downloadBlob(blob, `${safeTitle}.pptx`);
-        showToast('PowerPoint downloaded!');
-      } catch (err) { console.error('PPTX export error:', err); showToast('PPTX failed: ' + (err.message || String(err))); }
+        showToast('PowerPoint download complete!');
+      } catch (err) {
+        console.error('PPTX export error:', err);
+        showToast('PPTX export failed: ' + (err.message || 'Unknown error. Please refresh and try again.'));
+      }
     }
 
     function downloadBlob(blob, filename) {
