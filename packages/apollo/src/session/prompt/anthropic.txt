@@ -363,9 +363,76 @@ Generate this exact structure (Google Slides-style with export buttons):
       .nav-keys { display: none; }
       .btn span { display: none; }
     }
+
+    /* ============================================ */
+    /* THEME SYSTEM - 7 Themes (instant switching) */
+    /* ============================================ */
+
+    /* Theme 1: Pure White (default) */
+    body.theme-white .slide { background: #FFFFFF; }
+    body.theme-white h1, body.theme-white h2, body.theme-white .slide-title { color: #1a1a1a; }
+    body.theme-white p, body.theme-white .slide-subtitle, body.theme-white .slide-text { color: #5a5a5a; }
+    body.theme-white .label { color: #888888; }
+    body.theme-white .sources { color: #aaaaaa; }
+    body.theme-white ul li { color: #1a1a1a; }
+    body.theme-white ul li::before { background: #1a1a1a; }
+
+    /* Theme 2: Warm White */
+    body.theme-warm .slide { background: #FAFAF8; }
+    body.theme-warm h1, body.theme-warm h2, body.theme-warm .slide-title { color: #1a1814; }
+    body.theme-warm p, body.theme-warm .slide-subtitle, body.theme-warm .slide-text { color: #5a5850; }
+    body.theme-warm .label { color: #8a8878; }
+    body.theme-warm .sources { color: #b0a898; }
+    body.theme-warm ul li { color: #1a1814; }
+    body.theme-warm ul li::before { background: #1a1814; }
+
+    /* Theme 3: Light Gray */
+    body.theme-gray .slide { background: #F2F2F2; }
+    body.theme-gray h1, body.theme-gray h2, body.theme-gray .slide-title { color: #1a1a1a; }
+    body.theme-gray p, body.theme-gray .slide-subtitle, body.theme-gray .slide-text { color: #555555; }
+    body.theme-gray .label { color: #777777; }
+    body.theme-gray .sources { color: #999999; }
+    body.theme-gray ul li { color: #1a1a1a; }
+    body.theme-gray ul li::before { background: #1a1a1a; }
+
+    /* Theme 4: Cool Gray */
+    body.theme-cool .slide { background: #F5F7FA; }
+    body.theme-cool h1, body.theme-cool h2, body.theme-cool .slide-title { color: #1a1a1a; }
+    body.theme-cool p, body.theme-cool .slide-subtitle, body.theme-cool .slide-text { color: #555555; }
+    body.theme-cool .label { color: #777777; }
+    body.theme-cool .sources { color: #999999; }
+    body.theme-cool ul li { color: #1a1a1a; }
+    body.theme-cool ul li::before { background: #1a1a1a; }
+
+    /* Theme 5: Cream */
+    body.theme-cream .slide { background: #FAF9F6; }
+    body.theme-cream h1, body.theme-cream h2, body.theme-cream .slide-title { color: #2a2520; }
+    body.theme-cream p, body.theme-cream .slide-subtitle, body.theme-cream .slide-text { color: #5a554a; }
+    body.theme-cream .label { color: #7a7568; }
+    body.theme-cream .sources { color: #a8a090; }
+    body.theme-cream ul li { color: #2a2520; }
+    body.theme-cream ul li::before { background: #2a2520; }
+
+    /* Theme 6: Charcoal (dark) */
+    body.theme-charcoal .slide { background: #1a1a1a; }
+    body.theme-charcoal h1, body.theme-charcoal h2, body.theme-charcoal .slide-title { color: #ffffff; }
+    body.theme-charcoal p, body.theme-charcoal .slide-subtitle, body.theme-charcoal .slide-text { color: #888888; }
+    body.theme-charcoal .label { color: #666666; }
+    body.theme-charcoal .sources { color: #444444; }
+    body.theme-charcoal ul li { color: #ffffff; }
+    body.theme-charcoal ul li::before { background: #ffffff; }
+
+    /* Theme 7: Dark Forest */
+    body.theme-forest .slide { background: #0f1f1a; }
+    body.theme-forest h1, body.theme-forest h2, body.theme-forest .slide-title { color: #e8fff4; }
+    body.theme-forest p, body.theme-forest .slide-subtitle, body.theme-forest .slide-text { color: #70a090; }
+    body.theme-forest .label { color: #507868; }
+    body.theme-forest .sources { color: #305848; }
+    body.theme-forest ul li { color: #e8fff4; }
+    body.theme-forest ul li::before { background: #e8fff4; }
   </style>
 </head>
-<body>
+<body class="theme-white">
   <header class="toolbar" id="toolbar">
     <div class="toolbar-left">
       <span class="logo">Deck</span>
@@ -373,6 +440,15 @@ Generate this exact structure (Google Slides-style with export buttons):
       <span class="deck-title" id="deck-title">[Topic]</span>
     </div>
     <div class="toolbar-right">
+      <select id="theme-selector" class="btn btn-secondary" onchange="changeTheme(this.value)" title="Change theme">
+        <option value="white">Pure White</option>
+        <option value="warm">Warm White</option>
+        <option value="gray">Light Gray</option>
+        <option value="cool">Cool Gray</option>
+        <option value="cream">Cream</option>
+        <option value="charcoal">Charcoal</option>
+        <option value="forest">Dark Forest</option>
+      </select>
       <button class="btn btn-secondary" onclick="downloadPNG()" title="Download as PNG images">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         <span>PNG</span>
@@ -431,11 +507,37 @@ Generate this exact structure (Google Slides-style with export buttons):
     let idleTimer = null;
     let isFullscreen = false;
 
+    // Theme backgrounds for export
+    const themeBackgrounds = {
+      white: '#FFFFFF',
+      warm: '#FAFAF8',
+      gray: '#F2F2F2',
+      cool: '#F5F7FA',
+      cream: '#FAF9F6',
+      charcoal: '#1a1a1a',
+      forest: '#0f1f1a'
+    };
+
+    function changeTheme(theme) {
+      document.body.classList.remove('theme-white', 'theme-warm', 'theme-gray', 'theme-cool', 'theme-cream', 'theme-charcoal', 'theme-forest');
+      document.body.classList.add('theme-' + theme);
+      localStorage.setItem('deck-theme', theme);
+    }
+
+    function getCurrentTheme() {
+      const classes = document.body.className.match(/theme-(\w+)/);
+      return classes ? classes[1] : 'white';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       totalSlides = document.querySelectorAll('.slide').length;
       document.getElementById('total-slides').textContent = totalSlides;
       initKeyboard();
       initAutoHide();
+      // Load saved theme
+      const savedTheme = localStorage.getItem('deck-theme') || 'white';
+      document.getElementById('theme-selector').value = savedTheme;
+      changeTheme(savedTheme);
       // Wait for all libraries to load before auto-download
       waitForLibraries().then(() => {
         setTimeout(autoDownloadAll, 500);
@@ -546,11 +648,12 @@ Generate this exact structure (Google Slides-style with export buttons):
         const zip = new JSZip();
         const deckTitle = document.getElementById('deck-title')?.textContent || 'deck';
         const safeTitle = deckTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30);
+        const bgColor = themeBackgrounds[getCurrentTheme()];
         for (let i = 0; i < slides.length; i++) {
           const slide = slides[i];
           showToast(`Capturing slide ${i + 1} of ${slides.length}...`);
           slide.style.cssText = 'position:fixed;top:0;left:0;width:1280px;height:720px;transform:none;opacity:1;z-index:-1;';
-          const canvas = await html2canvas(slide, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 1280, height: 720 });
+          const canvas = await html2canvas(slide, { scale: 2, useCORS: true, backgroundColor: bgColor, width: 1280, height: 720 });
           slide.style.cssText = '';
           const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
           zip.file(`slide-${String(i + 1).padStart(2, '0')}.png`, blob);
@@ -583,11 +686,12 @@ Generate this exact structure (Google Slides-style with export buttons):
         pptx.title = deckTitle;
         pptx.author = 'Deck by Apollo';
         const safeTitle = deckTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) || 'presentation';
+        const bgColor = themeBackgrounds[getCurrentTheme()];
         for (let i = 0; i < slides.length; i++) {
           const slide = slides[i];
           showToast(`Converting slide ${i + 1} of ${slides.length}...`);
           slide.style.cssText = 'position:fixed;top:0;left:0;width:1280px;height:720px;transform:none;opacity:1;z-index:-1;';
-          const canvas = await html2canvas(slide, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 1280, height: 720 });
+          const canvas = await html2canvas(slide, { scale: 2, useCORS: true, backgroundColor: bgColor, width: 1280, height: 720 });
           slide.style.cssText = '';
           const pptxSlide = pptx.addSlide();
           pptxSlide.addImage({ data: canvas.toDataURL('image/png'), x: 0, y: 0, w: '100%', h: '100%' });
