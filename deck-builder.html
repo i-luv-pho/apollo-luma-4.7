@@ -594,6 +594,10 @@
         if (!data.success) throw new Error(data.error);
 
         if (data.gammaUrl) {
+          // Auto-download PPTX if available
+          if (data.pptxUrl) {
+            window.open(data.pptxUrl, '_blank');
+          }
           showSuccess(data);
         } else {
           throw new Error('No presentation generated');
