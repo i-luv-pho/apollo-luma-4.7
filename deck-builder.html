@@ -6,6 +6,7 @@
   <title>Apollo</title>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -33,6 +34,381 @@
       display: flex;
       flex-direction: column;
       padding: 0 24px;
+    }
+
+    /* ===== SPLIT SCREEN LAYOUT ===== */
+    .split-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .chat-panel {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      transition: flex 0.3s ease;
+    }
+
+    .chat-panel.with-preview {
+      flex: 0 0 55%;
+    }
+
+    .chat-panel .container {
+      max-width: 100%;
+      padding: 0 24px;
+    }
+
+    .preview-panel {
+      flex: 0 0 45%;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      transition: flex 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+      box-shadow: -4px 0 20px rgba(42,37,32,0.04);
+      overflow: hidden;
+    }
+
+    .preview-panel.collapsed {
+      flex: 0 0 0%;
+      opacity: 0;
+      transform: translateX(100%);
+      pointer-events: none;
+    }
+
+    .preview-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+
+    .preview-title {
+      font-family: 'Fraunces', serif;
+      font-size: 15px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      color: var(--muted);
+    }
+
+    .preview-close:hover {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
+    .preview-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    /* Slide Preview Area */
+    .slide-preview-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+    }
+
+    .slide-preview {
+      width: 100%;
+      max-width: 100%;
+      aspect-ratio: 16 / 9;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(42,37,32,0.1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .slide-preview-content {
+      width: 100%;
+      height: 100%;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-preview-content.left-align {
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .slide-preview-content h2 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(16px, 3vw, 28px);
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+
+    .slide-preview-content p {
+      font-size: clamp(10px, 1.5vw, 14px);
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 80%;
+    }
+
+    .slide-preview-content ul {
+      text-align: left;
+      font-size: clamp(10px, 1.5vw, 14px);
+      color: var(--muted);
+      line-height: 1.8;
+      padding-left: 20px;
+      margin: 0;
+      list-style: disc;
+    }
+
+    .slide-preview-content ul li {
+      margin-bottom: 4px;
+    }
+
+    /* Slide Navigation */
+    .slide-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 16px 0;
+      flex-shrink: 0;
+    }
+
+    .slide-nav-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      color: var(--text);
+    }
+
+    .slide-nav-btn:hover:not(:disabled) {
+      border-color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .slide-nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .slide-counter {
+      font-size: 13px;
+      color: var(--muted);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    /* Slide Thumbnails */
+    .slide-thumbnails {
+      display: flex;
+      gap: 8px;
+      padding: 12px 0;
+      overflow-x: auto;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+    }
+
+    .slide-thumbnails::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .slide-thumbnails::-webkit-scrollbar-track {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    .slide-thumbnails::-webkit-scrollbar-thumb {
+      background: var(--muted);
+      border-radius: 2px;
+    }
+
+    .slide-thumbnail {
+      flex-shrink: 0;
+      width: 80px;
+      aspect-ratio: 16 / 9;
+      background: white;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 4px rgba(42,37,32,0.08);
+    }
+
+    .slide-thumbnail:hover {
+      border-color: var(--muted);
+      transform: translateY(-2px);
+    }
+
+    .slide-thumbnail.active {
+      border-color: var(--text);
+    }
+
+    .slide-thumbnail-content {
+      width: 100%;
+      height: 100%;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-thumbnail-content h4 {
+      font-size: 6px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .slide-thumbnail-content p {
+      font-size: 4px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    /* Empty State */
+    .preview-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 40px 20px;
+    }
+
+    .preview-empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: rgba(42,37,32,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .preview-empty h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .preview-empty p {
+      font-size: 14px;
+      max-width: 240px;
+      line-height: 1.5;
+    }
+
+    /* Preview Toggle Button */
+    .preview-toggle-btn {
+      padding: 8px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .preview-toggle-btn:hover {
+      border-color: var(--text);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(42,37,32,0.08);
+    }
+
+    .preview-toggle-btn.active {
+      background: var(--text);
+      color: white;
+      border-color: var(--text);
+    }
+
+    /* Responsive - stack on mobile */
+    @media (max-width: 900px) {
+      .split-container {
+        flex-direction: column;
+      }
+
+      .chat-panel.with-preview {
+        flex: 0 0 50%;
+      }
+
+      .preview-panel {
+        flex: 0 0 50%;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -4px 20px rgba(42,37,32,0.04);
+      }
+
+      .preview-panel.collapsed {
+        transform: translateY(100%);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .chat-panel.with-preview {
+        flex: 0 0 40%;
+      }
+
+      .preview-panel {
+        flex: 0 0 60%;
+      }
+
+      .preview-content {
+        padding: 12px;
+      }
+
+      .slide-thumbnail {
+        width: 60px;
+      }
     }
 
     /* Header */
@@ -607,6 +983,1322 @@
       .msg.user span { max-width: 90%; }
       .welcome-message { padding: 24px 16px; }
     }
+
+    /* ===== BRAND KIT STYLES ===== */
+
+    .brand-kit-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(250,249,246,0.95);
+      backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .brand-kit-box {
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(42,37,32,0.12);
+      animation: fadeIn 0.3s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .brand-kit-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .brand-kit-header h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-kit-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .brand-kit-close:hover {
+      border-color: var(--text);
+      background: var(--surface);
+    }
+
+    .brand-kit-section {
+      margin-bottom: 24px;
+    }
+
+    .brand-kit-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* Logo Upload */
+    .logo-upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--surface);
+    }
+
+    .logo-upload-area:hover {
+      border-color: var(--text);
+      background: rgba(42,37,32,0.02);
+    }
+
+    .logo-upload-area.dragover {
+      border-color: var(--text);
+      background: rgba(42,37,32,0.04);
+    }
+
+    .logo-upload-area.has-logo {
+      padding: 16px;
+      border-style: solid;
+    }
+
+    .logo-upload-icon {
+      margin-bottom: 12px;
+      color: var(--muted);
+    }
+
+    .logo-upload-text {
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .logo-upload-hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .logo-preview {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-preview img {
+      max-width: 120px;
+      max-height: 60px;
+      object-fit: contain;
+    }
+
+    .logo-preview-info {
+      flex: 1;
+      text-align: left;
+    }
+
+    .logo-preview-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .logo-preview-size {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .logo-remove-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.2s ease;
+    }
+
+    .logo-remove-btn:hover {
+      border-color: #dc2626;
+      color: #dc2626;
+    }
+
+    .logo-placement {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .logo-placement-btn {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .logo-placement-btn:hover {
+      border-color: var(--text);
+    }
+
+    .logo-placement-btn.active {
+      border-color: var(--text);
+      background: var(--text);
+      color: white;
+    }
+
+    /* Color Pickers */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .color-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--surface);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .color-swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 2px solid rgba(0,0,0,0.1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .color-swatch input[type="color"] {
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      top: -25%;
+      left: -25%;
+      cursor: pointer;
+      border: none;
+    }
+
+    .color-info {
+      flex: 1;
+    }
+
+    .color-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .color-value {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: monospace;
+    }
+
+    /* Brand Voice */
+    .voice-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .voice-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--bg);
+    }
+
+    .voice-option:hover {
+      border-color: var(--text);
+    }
+
+    .voice-option.active {
+      border-color: var(--text);
+      background: rgba(42,37,32,0.03);
+    }
+
+    .voice-radio {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .voice-option.active .voice-radio {
+      border-color: var(--text);
+    }
+
+    .voice-radio-inner {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text);
+      transform: scale(0);
+      transition: transform 0.2s ease;
+    }
+
+    .voice-option.active .voice-radio-inner {
+      transform: scale(1);
+    }
+
+    .voice-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .voice-description {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Custom Guidelines */
+    .guidelines-textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+      background: var(--bg);
+      transition: border-color 0.2s ease;
+    }
+
+    .guidelines-textarea:focus {
+      outline: none;
+      border-color: var(--text);
+    }
+
+    .guidelines-textarea::placeholder {
+      color: var(--muted);
+    }
+
+    /* Company Info */
+    .company-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 10px;
+      background: var(--bg);
+      transition: border-color 0.2s ease;
+    }
+
+    .company-input:focus {
+      outline: none;
+      border-color: var(--text);
+    }
+
+    .company-input:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Save Button */
+    .brand-kit-save {
+      width: 100%;
+      padding: 14px;
+      background: var(--text);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+    }
+
+    .brand-kit-save:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    /* Brand Kit Indicator (in header) */
+    .header-btns {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-kit-btn {
+      padding: 8px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .brand-kit-btn:hover {
+      border-color: var(--text);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(42,37,32,0.08);
+    }
+
+    .brand-kit-btn.configured {
+      border-color: #22c55e;
+      background: rgba(34,197,94,0.05);
+    }
+
+    .brand-kit-btn.configured .brand-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+
+    /* Brand preview in summary */
+    .brand-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(42,37,32,0.03);
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    .brand-preview-logo {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+
+    .brand-preview-colors {
+      display: flex;
+      gap: 4px;
+    }
+
+    .brand-preview-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .brand-preview-text {
+      flex: 1;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Download button loading state */
+    .dl-btn .spinner {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .dl-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    /* Local PPTX download badge */
+    .local-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      background: var(--accent);
+      color: white;
+      border-radius: 4px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* ===== EDITABLE SLIDES STYLES ===== */
+
+    /* Edit Mode Container */
+    .slide-editing {
+      position: relative;
+      outline: 2px solid #3b82f6;
+      outline-offset: 4px;
+      border-radius: 8px;
+    }
+
+    .slide-editing::before {
+      content: 'Editing';
+      position: absolute;
+      top: -28px;
+      left: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #3b82f6;
+      background: var(--bg);
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      z-index: 10;
+    }
+
+    /* Editable Text Elements */
+    .editable-text {
+      cursor: text;
+      border-radius: 4px;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+      padding: 2px 4px;
+      margin: -2px -4px;
+    }
+
+    .editable-text:hover {
+      background: rgba(42,37,32,0.04);
+    }
+
+    .editable-text:focus {
+      outline: none;
+      background: rgba(42,37,32,0.06);
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
+    }
+
+    .editable-text[contenteditable="true"] {
+      min-width: 50px;
+      min-height: 1em;
+    }
+
+    /* Editable Bullets */
+    .editable-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0;
+    }
+
+    .editable-bullet-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 6px 0;
+      position: relative;
+    }
+
+    .editable-bullet-item::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-top: 8px;
+      flex-shrink: 0;
+    }
+
+    .editable-bullet-item .bullet-text {
+      flex: 1;
+      cursor: text;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .editable-bullet-item .bullet-text:hover {
+      background: rgba(42,37,32,0.04);
+    }
+
+    .editable-bullet-item .bullet-text:focus {
+      outline: none;
+      background: rgba(42,37,32,0.06);
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
+    }
+
+    .bullet-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .editable-bullet-item:hover .bullet-actions {
+      opacity: 1;
+    }
+
+    .bullet-action-btn {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: var(--surface);
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      transition: all 0.15s ease;
+    }
+
+    .bullet-action-btn:hover {
+      background: var(--text);
+      color: white;
+    }
+
+    .bullet-action-btn.delete:hover {
+      background: #dc2626;
+    }
+
+    .add-bullet-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: 1px dashed var(--border);
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .add-bullet-btn:hover {
+      border-color: var(--text);
+      color: var(--text);
+      background: rgba(42,37,32,0.02);
+    }
+
+    /* Edit Toolbar */
+    .edit-toolbar {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .edit-toolbar.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .edit-toolbar-divider {
+      width: 1px;
+      height: 24px;
+      background: rgba(255,255,255,0.2);
+      margin: 0 8px;
+    }
+
+    .toolbar-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.8);
+      transition: all 0.15s ease;
+    }
+
+    .toolbar-btn:hover {
+      background: rgba(255,255,255,0.15);
+      color: white;
+    }
+
+    .toolbar-btn.active {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    .toolbar-color-picker {
+      width: 24px;
+      height: 24px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .toolbar-color-picker input[type="color"] {
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      top: -25%;
+      left: -25%;
+      cursor: pointer;
+      border: none;
+    }
+
+    .toolbar-font-size {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 8px;
+    }
+
+    .toolbar-font-size span {
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      min-width: 30px;
+      text-align: center;
+    }
+
+    .toolbar-action-btn {
+      padding: 6px 12px;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      color: white;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .toolbar-action-btn:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    .toolbar-action-btn.primary {
+      background: #22c55e;
+    }
+
+    .toolbar-action-btn.primary:hover {
+      background: #16a34a;
+    }
+
+    .toolbar-action-btn.danger {
+      background: rgba(220,38,38,0.8);
+    }
+
+    .toolbar-action-btn.danger:hover {
+      background: #dc2626;
+    }
+
+    /* Speaker Notes */
+    .speaker-notes-container {
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    .speaker-notes-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 8px 0;
+    }
+
+    .speaker-notes-header h4 {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+    }
+
+    .speaker-notes-header .chevron {
+      transition: transform 0.2s ease;
+    }
+
+    .speaker-notes-container.expanded .speaker-notes-header .chevron {
+      transform: rotate(180deg);
+    }
+
+    .speaker-notes-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .speaker-notes-container.expanded .speaker-notes-content {
+      max-height: 200px;
+    }
+
+    .speaker-notes-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      background: var(--surface);
+      color: var(--text);
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    .speaker-notes-textarea:focus {
+      outline: none;
+      border-color: var(--text);
+    }
+
+    .speaker-notes-textarea::placeholder {
+      color: var(--muted);
+    }
+
+    /* Editable Image */
+    .editable-image-container {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .editable-image-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: filter 0.2s ease;
+    }
+
+    .editable-image-container:hover img {
+      filter: brightness(0.9);
+    }
+
+    .editable-image-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(42,37,32,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .editable-image-container:hover .editable-image-overlay {
+      opacity: 1;
+    }
+
+    .editable-image-overlay span {
+      color: white;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Image Search Dialog */
+    .image-search-dialog {
+      position: fixed;
+      inset: 0;
+      background: rgba(250,249,246,0.95);
+      backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .image-search-dialog.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .image-search-box {
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(42,37,32,0.12);
+    }
+
+    .image-search-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .image-search-header h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .image-search-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-search-close:hover {
+      border-color: var(--text);
+    }
+
+    .image-search-input-wrapper {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .image-search-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .image-search-input:focus {
+      outline: none;
+      border-color: var(--text);
+    }
+
+    .image-search-btn {
+      padding: 12px 20px;
+      background: var(--text);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .image-search-btn:hover {
+      opacity: 0.9;
+    }
+
+    .image-search-results {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .image-search-result {
+      aspect-ratio: 16/10;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .image-search-result:hover {
+      border-color: var(--text);
+      transform: scale(1.02);
+    }
+
+    .image-search-result img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .image-upload-area-edit {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .image-upload-area-edit:hover {
+      border-color: var(--text);
+      background: rgba(42,37,32,0.02);
+    }
+
+    /* Slide Modified Indicator */
+    .slide-modified-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #f59e0b;
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      z-index: 5;
+    }
+
+    /* Slide Thumbnail Edit Mode */
+    .slide-thumbnail.modified::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      background: #f59e0b;
+      border-radius: 50%;
+    }
+
+    /* Edit button on slide preview */
+    .slide-edit-btn {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      padding: 8px 14px;
+      background: var(--text);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 10;
+    }
+
+    .slide-preview:hover .slide-edit-btn {
+      opacity: 1;
+    }
+
+    .slide-edit-btn:hover {
+      transform: scale(1.05);
+    }
+
+    /* ===== AI LAYOUT SUGGESTIONS ===== */
+
+    /* Layout Picker Modal */
+    .layout-picker-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(250,249,246,0.92);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .layout-picker-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .layout-picker {
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 640px;
+      width: 100%;
+      box-shadow: 0 24px 80px rgba(42,37,32,0.15);
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .layout-picker-overlay.visible .layout-picker {
+      transform: translateY(0) scale(1);
+    }
+
+    .layout-picker-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .layout-picker-header h3 {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .layout-picker-header h3 .badge {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      color: white;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .layout-picker-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .layout-picker-close:hover {
+      border-color: var(--text);
+      background: var(--surface);
+      transform: rotate(90deg);
+    }
+
+    .layout-picker-subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 14px;
+    }
+
+    /* Layout Thumbnail */
+    .layout-thumbnail {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .layout-thumbnail:hover {
+      border-color: var(--text);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(42,37,32,0.12);
+    }
+
+    .layout-thumbnail.selected {
+      border-color: #22c55e;
+      background: rgba(34,197,94,0.05);
+    }
+
+    .layout-thumbnail.selected::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 20px;
+      height: 20px;
+      background: #22c55e url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center/12px no-repeat;
+      border-radius: 50%;
+    }
+
+    .layout-thumbnail.recommended {
+      border-color: #8b5cf6;
+    }
+
+    .layout-thumbnail.recommended::before {
+      content: 'Recommended';
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      font-size: 8px;
+      font-weight: 600;
+      padding: 2px 6px;
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      color: white;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      z-index: 2;
+    }
+
+    .layout-thumbnail-inner {
+      position: absolute;
+      inset: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .layout-thumbnail-name {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 8px;
+      background: linear-gradient(transparent, rgba(42,37,32,0.9));
+      color: white;
+      font-size: 11px;
+      font-weight: 500;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .layout-thumbnail:hover .layout-thumbnail-name {
+      opacity: 1;
+    }
+
+    /* Mini slide preview elements */
+    .mini-title { height: 8px; background: var(--text); border-radius: 2px; opacity: 0.8; }
+    .mini-subtitle { height: 5px; background: var(--muted); border-radius: 2px; opacity: 0.5; width: 60%; }
+    .mini-bullet { height: 4px; background: var(--muted); border-radius: 2px; opacity: 0.4; }
+    .mini-image { background: linear-gradient(135deg, var(--muted), var(--border)); border-radius: 4px; opacity: 0.3; }
+
+    /* Suggest Layouts Button */
+    .suggest-layouts-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(99,102,241,0.1));
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #7c3aed;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .suggest-layouts-btn:hover {
+      background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.2));
+      border-color: #8b5cf6;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(139,92,246,0.2);
+    }
+
+    /* ===== SLIDE LAYOUT TEMPLATES ===== */
+
+    /* Layout: Centered */
+    .slide-preview.layout-centered .slide-preview-content {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .slide-preview.layout-centered .slide-preview-content h2 { font-size: clamp(18px, 3.5vw, 32px); }
+    .slide-preview.layout-centered .slide-preview-content ul { text-align: center; list-style: none; padding-left: 0; }
+
+    /* Layout: Left Image */
+    .slide-preview.layout-left-image .slide-preview-content { flex-direction: row; padding: 0; }
+    .slide-preview.layout-left-image .slide-image-container { width: 45%; height: 100%; flex-shrink: 0; background: linear-gradient(135deg, var(--muted), var(--border)); }
+    .slide-preview.layout-left-image .slide-text-container { flex: 1; padding: 24px; display: flex; flex-direction: column; justify-content: center; }
+
+    /* Layout: Right Image */
+    .slide-preview.layout-right-image .slide-preview-content { flex-direction: row-reverse; padding: 0; }
+    .slide-preview.layout-right-image .slide-image-container { width: 45%; height: 100%; flex-shrink: 0; background: linear-gradient(135deg, var(--muted), var(--border)); }
+    .slide-preview.layout-right-image .slide-text-container { flex: 1; padding: 24px; display: flex; flex-direction: column; justify-content: center; }
+
+    /* Layout: Full Image */
+    .slide-preview.layout-full-image .slide-preview-content { padding: 0; position: relative; }
+    .slide-preview.layout-full-image .slide-image-container { position: absolute; inset: 0; background: linear-gradient(135deg, var(--muted), var(--border)); }
+    .slide-preview.layout-full-image .slide-text-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 32px 24px 24px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; }
+    .slide-preview.layout-full-image .slide-text-overlay h2 { color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+    /* Layout: Two Column */
+    .slide-preview.layout-two-column .slide-preview-content { align-items: flex-start; text-align: left; }
+    .slide-preview.layout-two-column .slide-preview-content ul { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; width: 100%; }
+
+    /* Layout: Quote */
+    .slide-preview.layout-quote .slide-preview-content { align-items: center; justify-content: center; text-align: center; padding: 32px; }
+    .slide-preview.layout-quote .slide-preview-content h2 { font-size: clamp(16px, 3vw, 28px); font-style: italic; font-weight: 400; line-height: 1.5; position: relative; }
+    .slide-preview.layout-quote .slide-preview-content h2::before { content: '"'; font-size: 48px; position: absolute; top: -16px; left: -12px; opacity: 0.15; font-style: normal; }
+
+    /* Layout: Stats */
+    .slide-preview.layout-stats .slide-preview-content { justify-content: center; align-items: flex-start; text-align: left; }
+    .slide-preview.layout-stats .slide-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; margin-top: 16px; }
+    .slide-preview.layout-stats .stat-item { text-align: center; }
+    .slide-preview.layout-stats .stat-number { font-family: 'Fraunces', serif; font-size: clamp(20px, 4vw, 36px); font-weight: 600; color: var(--text); line-height: 1; }
+    .slide-preview.layout-stats .stat-label { font-size: clamp(8px, 1.2vw, 12px); color: var(--muted); margin-top: 4px; }
+
+    /* Slide toolbar for layout button */
+    .slide-toolbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s ease; z-index: 10; }
+    .slide-preview:hover .slide-toolbar { opacity: 1; }
+    .slide-toolbar-btn { width: 32px; height: 32px; border-radius: 8px; border: none; background: rgba(255,255,255,0.95); box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+    .slide-toolbar-btn:hover { background: var(--text); color: white; transform: scale(1.1); }
+    .slide-toolbar-btn.layout-btn { background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; }
+    .slide-toolbar-btn.layout-btn:hover { transform: scale(1.1); box-shadow: 0 4px 16px rgba(139,92,246,0.4); }
+
+    /* Layout transition */
+    .slide-preview.layout-transitioning { animation: layoutTransition 0.4s ease; }
+    @keyframes layoutTransition { 0% { opacity: 0.5; transform: scale(0.98); } 50% { opacity: 0.8; } 100% { opacity: 1; transform: scale(1); } }
+
+    @media (max-width: 600px) {
+      .layout-picker { padding: 20px; max-height: 90vh; overflow-y: auto; }
+      .layout-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .slide-preview.layout-two-column .slide-preview-content ul { grid-template-columns: 1fr; }
+      .slide-preview.layout-stats .slide-stats-grid { grid-template-columns: 1fr; gap: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -621,24 +2313,315 @@
     </div>
   </div>
 
-  <!-- Main App -->
-  <div class="container hidden" id="app">
-    <header>
-      <div class="logo">Apollo</div>
-      <button class="new-btn" onclick="reset()">
-        <i data-lucide="plus" style="width:14px;height:14px"></i>
-        New
-      </button>
-    </header>
-
-    <div class="chat" id="chat"></div>
-
-    <div class="input-area">
-      <div class="input-box">
-        <textarea id="input" placeholder="Describe your idea..." rows="1"></textarea>
-        <button class="send-btn" id="sendBtn">
-          <i data-lucide="arrow-up" style="width:18px;height:18px"></i>
+  <!-- Brand Kit Modal -->
+  <div class="brand-kit-modal hidden" id="brandKitModal">
+    <div class="brand-kit-box">
+      <div class="brand-kit-header">
+        <h2>
+          <i data-lucide="palette" style="width:22px;height:22px"></i>
+          Brand Kit
+        </h2>
+        <button class="brand-kit-close" onclick="closeBrandKit()">
+          <i data-lucide="x" style="width:16px;height:16px"></i>
         </button>
+      </div>
+
+      <!-- Logo Upload -->
+      <div class="brand-kit-section">
+        <h3>Logo</h3>
+        <div class="logo-upload-area" id="logoUploadArea" onclick="document.getElementById('logoInput').click()">
+          <div id="logoUploadContent">
+            <div class="logo-upload-icon">
+              <i data-lucide="upload" style="width:32px;height:32px"></i>
+            </div>
+            <div class="logo-upload-text">Drop your logo here or click to upload</div>
+            <div class="logo-upload-hint">SVG recommended for best quality</div>
+          </div>
+          <div id="logoPreviewContent" class="logo-preview hidden">
+            <img id="logoPreviewImg" src="" alt="Logo preview" />
+            <div class="logo-preview-info">
+              <div class="logo-preview-name" id="logoFileName">logo.svg</div>
+              <div class="logo-preview-size" id="logoFileSize">12 KB</div>
+            </div>
+            <button class="logo-remove-btn" onclick="event.stopPropagation(); removeLogo()">Remove</button>
+          </div>
+        </div>
+        <input type="file" id="logoInput" accept=".svg,.png,.jpg,.jpeg" style="display:none" />
+
+        <div class="logo-placement" id="logoPlacement" style="display:none">
+          <button class="logo-placement-btn active" data-placement="top-left">Top Left</button>
+          <button class="logo-placement-btn" data-placement="top-right">Top Right</button>
+          <button class="logo-placement-btn" data-placement="bottom-left">Bottom Left</button>
+          <button class="logo-placement-btn" data-placement="bottom-right">Bottom Right</button>
+        </div>
+      </div>
+
+      <!-- Brand Colors -->
+      <div class="brand-kit-section">
+        <h3>Brand Colors</h3>
+        <div class="color-grid">
+          <div class="color-item">
+            <div class="color-swatch" id="primarySwatch" style="background:#2563eb">
+              <input type="color" id="primaryColor" value="#2563eb" />
+            </div>
+            <div class="color-info">
+              <div class="color-label">Primary</div>
+              <div class="color-value" id="primaryValue">#2563EB</div>
+            </div>
+          </div>
+          <div class="color-item">
+            <div class="color-swatch" id="secondarySwatch" style="background:#1e40af">
+              <input type="color" id="secondaryColor" value="#1e40af" />
+            </div>
+            <div class="color-info">
+              <div class="color-label">Secondary</div>
+              <div class="color-value" id="secondaryValue">#1E40AF</div>
+            </div>
+          </div>
+          <div class="color-item">
+            <div class="color-swatch" id="accentSwatch" style="background:#f59e0b">
+              <input type="color" id="accentColor" value="#f59e0b" />
+            </div>
+            <div class="color-info">
+              <div class="color-label">Accent</div>
+              <div class="color-value" id="accentValue">#F59E0B</div>
+            </div>
+          </div>
+          <div class="color-item">
+            <div class="color-swatch" id="backgroundSwatch" style="background:#ffffff">
+              <input type="color" id="backgroundColor" value="#ffffff" />
+            </div>
+            <div class="color-info">
+              <div class="color-label">Background</div>
+              <div class="color-value" id="backgroundValue">#FFFFFF</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brand Voice -->
+      <div class="brand-kit-section">
+        <h3>Brand Voice</h3>
+        <div class="voice-options">
+          <div class="voice-option active" data-voice="professional">
+            <div class="voice-radio"><div class="voice-radio-inner"></div></div>
+            <div>
+              <div class="voice-label">Professional & Formal</div>
+              <div class="voice-description">Clear, authoritative, business-appropriate</div>
+            </div>
+          </div>
+          <div class="voice-option" data-voice="friendly">
+            <div class="voice-radio"><div class="voice-radio-inner"></div></div>
+            <div>
+              <div class="voice-label">Friendly & Approachable</div>
+              <div class="voice-description">Warm, conversational, engaging</div>
+            </div>
+          </div>
+          <div class="voice-option" data-voice="bold">
+            <div class="voice-radio"><div class="voice-radio-inner"></div></div>
+            <div>
+              <div class="voice-label">Bold & Confident</div>
+              <div class="voice-description">Strong statements, impactful, daring</div>
+            </div>
+          </div>
+          <div class="voice-option" data-voice="minimal">
+            <div class="voice-radio"><div class="voice-radio-inner"></div></div>
+            <div>
+              <div class="voice-label">Minimal & Clean</div>
+              <div class="voice-description">Concise, elegant, no fluff</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Guidelines -->
+      <div class="brand-kit-section">
+        <h3>Custom Guidelines (Optional)</h3>
+        <textarea
+          class="guidelines-textarea"
+          id="customGuidelines"
+          placeholder="Add any specific instructions for your brand...&#10;&#10;Example: Always use data-driven arguments. Avoid buzzwords like 'synergy'. Focus on customer outcomes."
+        ></textarea>
+      </div>
+
+      <!-- Company Info -->
+      <div class="brand-kit-section">
+        <h3>Company Info (Optional)</h3>
+        <input type="text" class="company-input" id="companyName" placeholder="Company Name" />
+        <input type="text" class="company-input" id="companyTagline" placeholder="Tagline or slogan" />
+      </div>
+
+      <button class="brand-kit-save" onclick="saveBrandKit()">
+        <i data-lucide="check" style="width:18px;height:18px"></i>
+        Save Brand Kit
+      </button>
+    </div>
+  </div>
+
+  <!-- Layout Picker Modal -->
+  <div class="layout-picker-overlay" id="layoutPickerOverlay" onclick="closeLayoutPicker(event)">
+    <div class="layout-picker" onclick="event.stopPropagation()">
+      <div class="layout-picker-header">
+        <h3>
+          <i data-lucide="layout" style="width:20px;height:20px"></i>
+          Suggest Layouts
+          <span class="badge">AI</span>
+        </h3>
+        <button class="layout-picker-close" onclick="closeLayoutPicker()">
+          <i data-lucide="x" style="width:16px;height:16px"></i>
+        </button>
+      </div>
+      <p class="layout-picker-subtitle">Choose a layout that best fits your content. Recommended layouts are based on your slide content.</p>
+      <div class="layout-grid" id="layoutGrid">
+        <!-- Layout thumbnails will be rendered here by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Toolbar (floating) -->
+  <div class="edit-toolbar" id="editToolbar">
+    <button class="toolbar-btn" onclick="document.execCommand('bold')" title="Bold">
+      <i data-lucide="bold" style="width:16px;height:16px"></i>
+    </button>
+    <button class="toolbar-btn" onclick="document.execCommand('italic')" title="Italic">
+      <i data-lucide="italic" style="width:16px;height:16px"></i>
+    </button>
+    <div class="edit-toolbar-divider"></div>
+    <div class="toolbar-font-size">
+      <button class="toolbar-btn" onclick="changeFontSize(-2)" title="Decrease font">
+        <i data-lucide="minus" style="width:14px;height:14px"></i>
+      </button>
+      <span id="currentFontSize">16px</span>
+      <button class="toolbar-btn" onclick="changeFontSize(2)" title="Increase font">
+        <i data-lucide="plus" style="width:14px;height:14px"></i>
+      </button>
+    </div>
+    <div class="edit-toolbar-divider"></div>
+    <div class="toolbar-color-picker" id="toolbarColorPicker" title="Text color">
+      <input type="color" id="textColorPicker" value="#2a2520" onchange="applyTextColor(this.value)">
+    </div>
+    <div class="edit-toolbar-divider"></div>
+    <button class="toolbar-action-btn danger" onclick="revertCurrentSlide()" title="Revert changes">
+      <i data-lucide="undo-2" style="width:14px;height:14px"></i>
+      Revert
+    </button>
+    <button class="toolbar-action-btn primary" onclick="exitEditMode()" title="Done editing">
+      <i data-lucide="check" style="width:14px;height:14px"></i>
+      Done
+    </button>
+  </div>
+
+  <!-- Image Search/Upload Dialog -->
+  <div class="image-search-dialog" id="imageSearchDialog">
+    <div class="image-search-box">
+      <div class="image-search-header">
+        <h3>Change Image</h3>
+        <button class="image-search-close" onclick="closeImageSearch()">
+          <i data-lucide="x" style="width:16px;height:16px"></i>
+        </button>
+      </div>
+      <div class="image-upload-area-edit" id="imageUploadAreaEdit" onclick="document.getElementById('editImageInput').click()">
+        <i data-lucide="upload" style="width:32px;height:32px;color:var(--muted)"></i>
+        <p style="margin:8px 0 0;color:var(--muted)">Drop an image here or click to upload</p>
+      </div>
+      <input type="file" id="editImageInput" accept="image/*" style="display:none" onchange="handleEditImageUpload(event)">
+      <div style="text-align:center;color:var(--muted);margin:16px 0;font-size:13px">or search for an image</div>
+      <div class="image-search-input-wrapper">
+        <input type="text" class="image-search-input" id="imageSearchInput" placeholder="Search for images..." onkeypress="if(event.key==='Enter')searchImages()">
+        <button class="image-search-btn" onclick="searchImages()">Search</button>
+      </div>
+      <div class="image-search-results" id="imageSearchResults">
+        <!-- Search results will appear here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div class="split-container hidden" id="app">
+    <!-- Chat Panel (Left Side) -->
+    <div class="chat-panel" id="chatPanel">
+      <div class="container">
+        <header>
+          <div class="logo">Apollo</div>
+          <div class="header-btns">
+            <button class="preview-toggle-btn" id="previewToggleBtn" onclick="togglePreview()">
+              <i data-lucide="layout-panel-left" style="width:14px;height:14px"></i>
+              <span id="previewToggleText">Preview</span>
+            </button>
+            <button class="brand-kit-btn" id="brandKitBtn" onclick="openBrandKit()">
+              <i data-lucide="palette" style="width:14px;height:14px"></i>
+              <span id="brandKitBtnText">Brand Kit</span>
+              <span class="brand-dot hidden" id="brandDot"></span>
+            </button>
+            <button class="new-btn" onclick="reset()">
+              <i data-lucide="plus" style="width:14px;height:14px"></i>
+              New
+            </button>
+          </div>
+        </header>
+
+        <div class="chat" id="chat"></div>
+
+        <div class="input-area">
+          <div class="input-box">
+            <textarea id="input" placeholder="Describe your idea..." rows="1"></textarea>
+            <button class="send-btn" id="sendBtn">
+              <i data-lucide="arrow-up" style="width:18px;height:18px"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Panel (Right Side) -->
+    <div class="preview-panel collapsed" id="previewPanel">
+      <div class="preview-header">
+        <div class="preview-title">
+          <i data-lucide="presentation" style="width:16px;height:16px"></i>
+          Slide Preview
+        </div>
+        <button class="preview-close" onclick="togglePreview()">
+          <i data-lucide="x" style="width:14px;height:14px"></i>
+        </button>
+      </div>
+
+      <div class="preview-content">
+        <!-- Empty State (shown when no slides) -->
+        <div class="preview-empty" id="previewEmpty">
+          <div class="preview-empty-icon">
+            <i data-lucide="layers" style="width:28px;height:28px;color:var(--muted)"></i>
+          </div>
+          <h3>No slides yet</h3>
+          <p>Your slides will appear here as they are generated.</p>
+        </div>
+
+        <!-- Slide Preview Wrapper (shown when slides exist) -->
+        <div class="slide-preview-wrapper hidden" id="slidePreviewWrapper">
+          <div class="slide-preview" id="slidePreview">
+            <div class="slide-preview-content" id="slidePreviewContent">
+              <!-- Slide content rendered here -->
+            </div>
+          </div>
+
+          <div class="slide-nav">
+            <button class="slide-nav-btn" id="prevSlideBtn" onclick="selectSlide(currentSlideIndex - 1)" disabled>
+              <i data-lucide="chevron-left" style="width:18px;height:18px"></i>
+            </button>
+            <span class="slide-counter" id="slideCounter">1 / 1</span>
+            <button class="slide-nav-btn" id="nextSlideBtn" onclick="selectSlide(currentSlideIndex + 1)" disabled>
+              <i data-lucide="chevron-right" style="width:18px;height:18px"></i>
+            </button>
+            <button class="suggest-layouts-btn" id="suggestLayoutsBtn" onclick="showLayoutPicker(currentSlideIndex)" style="margin-left:12px" title="AI Layout Suggestions">
+              <i data-lucide="sparkles" class="ai-sparkle" style="width:14px;height:14px"></i>
+              Layouts
+            </button>
+          </div>
+        </div>
+
+        <!-- Slide Thumbnails -->
+        <div class="slide-thumbnails hidden" id="slideThumbnails">
+          <!-- Thumbnails rendered here -->
+        </div>
       </div>
     </div>
   </div>
@@ -698,21 +2681,12 @@
     });
 
     async function validateKey(key) {
-      try {
-        const res = await fetch(`${API_BASE}/chat-with-apollo`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'x-access-key': key
-          },
-          body: JSON.stringify({ messages: [{ role: 'user', content: 'hi' }] })
-        });
-        const data = await res.json();
-        return data.success === true;
-      } catch {
+      // Basic format validation - actual validation happens on generation
+      // This avoids CORS issues with a separate validation endpoint
+      if (!key || !key.startsWith('sk_') || key.length < 10) {
         return false;
       }
+      return true;
     }
 
     function showApp() {
@@ -913,19 +2887,58 @@
 
     function showReady(message, sum) {
       const div = document.createElement('div');
+      const brandData = getBrandKitForGeneration();
+      const hasBrand = brandData && (brandData.logoUrl || brandData.companyName);
+
+      let brandPreviewHtml = '';
+      if (hasBrand) {
+        brandPreviewHtml = `
+          <div class="brand-preview">
+            ${brandData.logoUrl ? `<img class="brand-preview-logo" src="${brandData.logoUrl}" alt="Logo" />` : ''}
+            <div class="brand-preview-colors">
+              <div class="brand-preview-color" style="background:${brandData.colors.primary}"></div>
+              <div class="brand-preview-color" style="background:${brandData.colors.secondary}"></div>
+              <div class="brand-preview-color" style="background:${brandData.colors.accent}"></div>
+            </div>
+            <div class="brand-preview-text">${brandData.companyName || 'Brand kit configured'}</div>
+          </div>
+        `;
+      }
+
       div.innerHTML = `
         <div>${escape(message)}</div>
         <div class="summary">
           <div><strong>Topic:</strong> ${escape(sum.topic)}</div>
           <div><strong>Audience:</strong> ${escape(sum.audience)}</div>
           <div><strong>Slides:</strong> ${sum.slides}</div>
+          ${brandPreviewHtml}
         </div>
-        <button class="gen-btn" onclick="generate()">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px">
+          ${!hasBrand ? `
+            <button class="gen-btn" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border)" onclick="openBrandKit()">
+              <i data-lucide="palette" style="width:16px;height:16px"></i>
+              Brand Kit
+            </button>
+          ` : ''}
+          <button class="gen-btn" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border)" onclick="previewDraft()">
+            <i data-lucide="eye" style="width:16px;height:16px"></i>
+            Preview
+          </button>
+        </div>
+        <button class="gen-btn" onclick="generate()" style="margin-top:8px">
           Create presentation
         </button>
       `;
       addApollo(div);
     }
+
+    // Preview draft slides based on summary
+    function previewDraft() {
+      if (!summary) return;
+      const previewData = createSlideDataFromSummary(summary, conversation);
+      updatePreview(previewData);
+    }
+    window.previewDraft = previewDraft;
 
     // Generation stages with cute rotating messages
     const GEN_STAGES = [
@@ -1091,6 +3104,29 @@
           `${m.role === 'user' ? 'User' : 'Apollo'}: ${m.content}`
         ).join('\n');
 
+        // Get brand kit data for generation
+        const brandData = getBrandKitForGeneration();
+
+        // Build the topic string with brand context
+        let topicWithBrand = `${summary.topic} for ${summary.audience}. Goal: ${summary.goal}`;
+
+        // Add brand voice and guidelines to context
+        let brandContext = '';
+        if (brandData) {
+          if (brandData.companyName) {
+            brandContext += `\nCompany: ${brandData.companyName}`;
+          }
+          if (brandData.companyTagline) {
+            brandContext += `\nTagline: ${brandData.companyTagline}`;
+          }
+          if (brandData.voice) {
+            brandContext += `\n\nBrand Voice: ${brandData.voice}`;
+          }
+          if (brandData.customGuidelines) {
+            brandContext += `\n\nBrand Guidelines: ${brandData.customGuidelines}`;
+          }
+        }
+
         const res = await fetch(`${API_BASE}/generate-deck`, {
           method: 'POST',
           headers: {
@@ -1099,9 +3135,13 @@
             'x-access-key': accessKey
           },
           body: JSON.stringify({
-            topic: `${summary.topic} for ${summary.audience}. Goal: ${summary.goal}`,
+            topic: topicWithBrand,
             slides: summary.slides,
-            documentContext: context
+            documentContext: context + brandContext,
+            brandKit: brandData ? {
+              colors: brandData.colors,
+              logoPlacement: brandData.logoPlacement
+            } : null
           })
         });
 
@@ -1124,6 +3164,18 @@
           if (data.pptxUrl) {
             window.open(data.pptxUrl, '_blank');
           }
+
+          // Update live preview with generated slides
+          if (data.slides && data.slides.length > 0) {
+            updatePreview(data.slides);
+          } else if (generatedSlideData && generatedSlideData.length > 0) {
+            updatePreview(generatedSlideData);
+          } else {
+            // Create preview slides from summary if no slides data
+            const previewData = createSlideDataFromSummary(summary, conversation);
+            updatePreview(previewData);
+          }
+
           showSuccess(data);
         } else {
           throw new Error('No presentation generated');
@@ -1162,6 +3214,11 @@
       const remaining = data.usage ? (data.usage.decks_limit - data.usage.decks_used) : null;
       const isLow = remaining !== null && remaining <= 3;
 
+      // Store slide data if available for local PPTX generation
+      if (data.slides) {
+        generatedSlideData = data.slides;
+      }
+
       const div = document.createElement('div');
       div.innerHTML = `
         <div class="success-card animated">
@@ -1175,6 +3232,10 @@
               <i data-lucide="download" style="width:18px;height:18px"></i>
               Download PowerPoint
             </button>` : ''}
+            <button class="dl-btn ${data.pptxUrl ? 'secondary' : 'primary'}" onclick="downloadPptxLocally()">
+              <i data-lucide="file-down" style="width:18px;height:18px"></i>
+              Download PPTX (Local)
+            </button>
             ${data.pdfUrl ? `<button class="dl-btn secondary" onclick="window.open('${data.pdfUrl}')">
               <i data-lucide="file-text" style="width:18px;height:18px"></i>
               Download PDF
@@ -1218,6 +3279,1901 @@
       input.style.height = 'auto';
       input.style.height = Math.min(input.scrollHeight, 120) + 'px';
     });
+
+    // ===== BRAND KIT FUNCTIONALITY =====
+
+    // Brand Kit State
+    let brandKit = {
+      logo: null, // { dataUrl, fileName, fileSize, placement }
+      colors: {
+        primary: '#2563eb',
+        secondary: '#1e40af',
+        accent: '#f59e0b',
+        background: '#ffffff'
+      },
+      voice: 'professional',
+      customGuidelines: '',
+      companyName: '',
+      companyTagline: ''
+    };
+
+    // Load brand kit from localStorage
+    function loadBrandKit() {
+      const saved = localStorage.getItem('apollo_brand_kit');
+      if (saved) {
+        try {
+          brandKit = JSON.parse(saved);
+          updateBrandKitUI();
+          updateBrandKitButton();
+        } catch (e) {
+          console.error('Failed to load brand kit:', e);
+        }
+      }
+    }
+
+    // Save brand kit to localStorage
+    function saveBrandKitToStorage() {
+      localStorage.setItem('apollo_brand_kit', JSON.stringify(brandKit));
+    }
+
+    // Open Brand Kit Modal
+    function openBrandKit() {
+      $('brandKitModal').classList.remove('hidden');
+      updateBrandKitUI();
+      lucide.createIcons();
+    }
+
+    // Close Brand Kit Modal
+    function closeBrandKit() {
+      $('brandKitModal').classList.add('hidden');
+    }
+
+    // Update UI from brandKit state
+    function updateBrandKitUI() {
+      // Logo
+      if (brandKit.logo && brandKit.logo.dataUrl) {
+        showLogoPreview(brandKit.logo);
+      } else {
+        hideLogoPreview();
+      }
+
+      // Colors
+      $('primaryColor').value = brandKit.colors.primary;
+      $('primarySwatch').style.background = brandKit.colors.primary;
+      $('primaryValue').textContent = brandKit.colors.primary.toUpperCase();
+
+      $('secondaryColor').value = brandKit.colors.secondary;
+      $('secondarySwatch').style.background = brandKit.colors.secondary;
+      $('secondaryValue').textContent = brandKit.colors.secondary.toUpperCase();
+
+      $('accentColor').value = brandKit.colors.accent;
+      $('accentSwatch').style.background = brandKit.colors.accent;
+      $('accentValue').textContent = brandKit.colors.accent.toUpperCase();
+
+      $('backgroundColor').value = brandKit.colors.background;
+      $('backgroundSwatch').style.background = brandKit.colors.background;
+      $('backgroundValue').textContent = brandKit.colors.background.toUpperCase();
+
+      // Voice
+      document.querySelectorAll('.voice-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.voice === brandKit.voice);
+      });
+
+      // Logo placement
+      if (brandKit.logo) {
+        document.querySelectorAll('.logo-placement-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.placement === (brandKit.logo.placement || 'top-left'));
+        });
+      }
+
+      // Custom guidelines
+      $('customGuidelines').value = brandKit.customGuidelines || '';
+
+      // Company info
+      $('companyName').value = brandKit.companyName || '';
+      $('companyTagline').value = brandKit.companyTagline || '';
+    }
+
+    // Update the header button to show configured state
+    function updateBrandKitButton() {
+      const btn = $('brandKitBtn');
+      const dot = $('brandDot');
+      const hasConfig = brandKit.logo || brandKit.companyName || brandKit.customGuidelines;
+
+      if (hasConfig) {
+        btn.classList.add('configured');
+        dot.classList.remove('hidden');
+      } else {
+        btn.classList.remove('configured');
+        dot.classList.add('hidden');
+      }
+    }
+
+    // Logo handling
+    function showLogoPreview(logoData) {
+      $('logoUploadContent').classList.add('hidden');
+      $('logoPreviewContent').classList.remove('hidden');
+      $('logoUploadArea').classList.add('has-logo');
+      $('logoPreviewImg').src = logoData.dataUrl;
+      $('logoFileName').textContent = logoData.fileName || 'logo';
+      $('logoFileSize').textContent = logoData.fileSize || '';
+      $('logoPlacement').style.display = 'flex';
+    }
+
+    function hideLogoPreview() {
+      $('logoUploadContent').classList.remove('hidden');
+      $('logoPreviewContent').classList.add('hidden');
+      $('logoUploadArea').classList.remove('has-logo');
+      $('logoPlacement').style.display = 'none';
+    }
+
+    function removeLogo() {
+      brandKit.logo = null;
+      hideLogoPreview();
+    }
+
+    // File upload handling
+    $('logoInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleLogoFile(file);
+    });
+
+    function handleLogoFile(file) {
+      if (!file.type.match(/image\/(svg\+xml|png|jpeg|jpg)/)) {
+        alert('Please upload an SVG, PNG, or JPG file');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fileSize = file.size < 1024
+          ? `${file.size} B`
+          : file.size < 1024 * 1024
+            ? `${(file.size / 1024).toFixed(1)} KB`
+            : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+        brandKit.logo = {
+          dataUrl: e.target.result,
+          fileName: file.name,
+          fileSize: fileSize,
+          placement: brandKit.logo?.placement || 'top-left'
+        };
+
+        showLogoPreview(brandKit.logo);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Drag & drop
+    const uploadArea = $('logoUploadArea');
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleLogoFile(file);
+    });
+
+    // Color picker handlers
+    ['primary', 'secondary', 'accent', 'background'].forEach(colorName => {
+      const input = $(`${colorName}Color`);
+      input.addEventListener('input', (e) => {
+        const value = e.target.value;
+        brandKit.colors[colorName] = value;
+        $(`${colorName}Swatch`).style.background = value;
+        $(`${colorName}Value`).textContent = value.toUpperCase();
+      });
+    });
+
+    // Voice selection
+    document.querySelectorAll('.voice-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.voice-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        brandKit.voice = opt.dataset.voice;
+      });
+    });
+
+    // Logo placement selection
+    document.querySelectorAll('.logo-placement-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.logo-placement-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (brandKit.logo) {
+          brandKit.logo.placement = btn.dataset.placement;
+        }
+      });
+    });
+
+    // Save Brand Kit
+    function saveBrandKit() {
+      // Gather all values
+      brandKit.customGuidelines = $('customGuidelines').value.trim();
+      brandKit.companyName = $('companyName').value.trim();
+      brandKit.companyTagline = $('companyTagline').value.trim();
+
+      // Save to localStorage
+      saveBrandKitToStorage();
+
+      // Update button state
+      updateBrandKitButton();
+
+      // Close modal
+      closeBrandKit();
+
+      // Show confirmation
+      console.log('Brand Kit saved:', brandKit);
+    }
+
+    // Get brand kit for API calls
+    function getBrandKitForGeneration() {
+      if (!brandKit) return null;
+
+      const voiceDescriptions = {
+        professional: 'Use professional, formal language. Clear and authoritative tone.',
+        friendly: 'Use friendly, approachable language. Warm and conversational.',
+        bold: 'Use bold, confident language. Make strong statements with impact.',
+        minimal: 'Use minimal, clean language. Concise and elegant, no fluff.'
+      };
+
+      return {
+        logoUrl: brandKit.logo?.dataUrl || null,
+        logoPlacement: brandKit.logo?.placement || 'top-left',
+        colors: brandKit.colors,
+        voice: voiceDescriptions[brandKit.voice] || '',
+        customGuidelines: brandKit.customGuidelines || '',
+        companyName: brandKit.companyName || '',
+        companyTagline: brandKit.companyTagline || ''
+      };
+    }
+
+    // Initialize brand kit on load
+    loadBrandKit();
+
+    // ===== PPTXGENJS CLIENT-SIDE GENERATION =====
+
+    // Store generated slide data for local PPTX export
+    let generatedSlideData = null;
+
+    /**
+     * Generate PPTX locally using PptxGenJS
+     * @param {Array} slideData - Array of slide objects with content
+     * @param {Object} brandKit - Brand kit configuration
+     */
+    async function generatePptxLocally(slideData, brandKit) {
+      // Create new presentation
+      const pptx = new PptxGenJS();
+
+      // Set 16:9 aspect ratio
+      pptx.defineLayout({ name: 'LAYOUT_16x9', width: 13.333, height: 7.5 });
+      pptx.layout = 'LAYOUT_16x9';
+
+      // Default brand settings
+      const colors = brandKit?.colors || {
+        primary: '#2563eb',
+        secondary: '#1e40af',
+        accent: '#f59e0b',
+        background: '#ffffff'
+      };
+
+      const logoUrl = brandKit?.logoUrl || null;
+      const logoPlacement = brandKit?.logoPlacement || 'top-left';
+      const companyName = brandKit?.companyName || '';
+      const companyTagline = brandKit?.companyTagline || '';
+
+      // Helper: Convert hex to RGB for PptxGenJS
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? hex.replace('#', '').toUpperCase() : '2563EB';
+      }
+
+      // Helper: Get logo position based on placement
+      function getLogoPosition(placement) {
+        const positions = {
+          'top-left': { x: 0.3, y: 0.3 },
+          'top-center': { x: 6.2, y: 0.3 },
+          'top-right': { x: 12.1, y: 0.3 },
+          'bottom-left': { x: 0.3, y: 6.5 },
+          'bottom-right': { x: 12.1, y: 6.5 }
+        };
+        return positions[placement] || positions['top-left'];
+      }
+
+      // Helper: Add logo to slide
+      async function addLogoToSlide(slide) {
+        if (!logoUrl) return;
+
+        const pos = getLogoPosition(logoPlacement);
+        try {
+          slide.addImage({
+            data: logoUrl,
+            x: pos.x,
+            y: pos.y,
+            w: 0.9,
+            h: 0.5,
+            sizing: { type: 'contain', w: 0.9, h: 0.5 }
+          });
+        } catch (e) {
+          console.warn('Failed to add logo:', e);
+        }
+      }
+
+      // Helper: Determine if text should be light or dark based on background
+      function getContrastColor(bgHex) {
+        const hex = bgHex.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        return luminance > 0.5 ? '2A2520' : 'FFFFFF';
+      }
+
+      // Create Title Slide Template
+      async function createTitleSlide(data) {
+        const slide = pptx.addSlide();
+
+        // Background
+        slide.background = { color: hexToRgb(colors.primary) };
+
+        const textColor = getContrastColor(colors.primary);
+
+        // Title (Company name or main title)
+        slide.addText(data.headline || companyName || 'Presentation', {
+          x: 0.8,
+          y: 2.5,
+          w: 11.7,
+          h: 1.5,
+          fontSize: 48,
+          fontFace: 'Arial',
+          bold: true,
+          color: textColor,
+          align: 'center',
+          valign: 'middle'
+        });
+
+        // Subtitle/Tagline
+        if (data.subtitle || companyTagline) {
+          slide.addText(data.subtitle || companyTagline, {
+            x: 0.8,
+            y: 4.2,
+            w: 11.7,
+            h: 0.8,
+            fontSize: 24,
+            fontFace: 'Arial',
+            color: textColor,
+            align: 'center',
+            valign: 'middle'
+          });
+        }
+
+        // Add logo
+        await addLogoToSlide(slide);
+
+        // Speaker notes
+        if (data.speakerNotes) {
+          slide.addNotes(data.speakerNotes);
+        }
+      }
+
+      // Create Content Slide Template (headline + bullets + optional image)
+      async function createContentSlide(data) {
+        const slide = pptx.addSlide();
+
+        // Background
+        slide.background = { color: hexToRgb(colors.background) };
+
+        const textColor = getContrastColor(colors.background);
+        const hasImage = data.imageUrl && data.imageUrl.trim() !== '';
+
+        // Headline
+        slide.addText(data.headline || 'Slide Title', {
+          x: 0.8,
+          y: 0.5,
+          w: hasImage ? 7 : 11.7,
+          h: 1,
+          fontSize: 32,
+          fontFace: 'Arial',
+          bold: true,
+          color: hexToRgb(colors.primary)
+        });
+
+        // Bullets
+        if (data.bullets && data.bullets.length > 0) {
+          const bulletText = data.bullets.map(b => ({
+            text: b,
+            options: {
+              bullet: { type: 'bullet', color: hexToRgb(colors.accent) },
+              paraSpaceAfter: 12
+            }
+          }));
+
+          slide.addText(bulletText, {
+            x: 0.8,
+            y: 1.6,
+            w: hasImage ? 6.5 : 11.7,
+            h: 5,
+            fontSize: 18,
+            fontFace: 'Arial',
+            color: textColor,
+            valign: 'top'
+          });
+        }
+
+        // Image (right side if present)
+        if (hasImage) {
+          try {
+            // Check if it's a data URL or external URL
+            const imgProps = {
+              x: 7.8,
+              y: 1.2,
+              w: 4.7,
+              h: 5.5,
+              sizing: { type: 'contain', w: 4.7, h: 5.5 }
+            };
+
+            if (data.imageUrl.startsWith('data:')) {
+              imgProps.data = data.imageUrl;
+            } else {
+              imgProps.path = data.imageUrl;
+            }
+
+            slide.addImage(imgProps);
+          } catch (e) {
+            console.warn('Failed to add image:', e);
+          }
+        }
+
+        // Accent bar at bottom
+        slide.addShape(pptx.ShapeType.rect, {
+          x: 0,
+          y: 7.2,
+          w: 13.333,
+          h: 0.3,
+          fill: { color: hexToRgb(colors.accent) },
+          line: { color: hexToRgb(colors.accent), width: 0 }
+        });
+
+        // Add logo
+        await addLogoToSlide(slide);
+
+        // Speaker notes
+        if (data.speakerNotes) {
+          slide.addNotes(data.speakerNotes);
+        }
+      }
+
+      // Create Image-focused Slide Template
+      async function createImageSlide(data) {
+        const slide = pptx.addSlide();
+
+        // Background
+        slide.background = { color: hexToRgb(colors.secondary) };
+
+        const textColor = getContrastColor(colors.secondary);
+
+        // Large image
+        if (data.imageUrl) {
+          try {
+            const imgProps = {
+              x: 0.8,
+              y: 0.8,
+              w: 11.7,
+              h: 5.2,
+              sizing: { type: 'contain', w: 11.7, h: 5.2 }
+            };
+
+            if (data.imageUrl.startsWith('data:')) {
+              imgProps.data = data.imageUrl;
+            } else {
+              imgProps.path = data.imageUrl;
+            }
+
+            slide.addImage(imgProps);
+          } catch (e) {
+            console.warn('Failed to add image:', e);
+          }
+        }
+
+        // Caption at bottom
+        if (data.headline || data.caption) {
+          slide.addText(data.headline || data.caption, {
+            x: 0.8,
+            y: 6.2,
+            w: 11.7,
+            h: 0.8,
+            fontSize: 20,
+            fontFace: 'Arial',
+            color: textColor,
+            align: 'center',
+            valign: 'middle'
+          });
+        }
+
+        // Add logo
+        await addLogoToSlide(slide);
+
+        // Speaker notes
+        if (data.speakerNotes) {
+          slide.addNotes(data.speakerNotes);
+        }
+      }
+
+      // Process each slide
+      for (let i = 0; i < slideData.length; i++) {
+        const slide = slideData[i];
+        const slideType = slide.type || (i === 0 ? 'title' : 'content');
+
+        switch (slideType) {
+          case 'title':
+            await createTitleSlide(slide);
+            break;
+          case 'image':
+            await createImageSlide(slide);
+            break;
+          case 'content':
+          default:
+            await createContentSlide(slide);
+            break;
+        }
+      }
+
+      // Generate and download the PPTX
+      const fileName = companyName
+        ? `${companyName.replace(/[^a-zA-Z0-9]/g, '_')}_presentation.pptx`
+        : 'apollo_presentation.pptx';
+
+      await pptx.writeFile({ fileName });
+
+      return fileName;
+    }
+
+    /**
+     * Create sample slide data from summary for local generation
+     */
+    function createSlideDataFromSummary(sum, conversation) {
+      const brandData = getBrandKitForGeneration();
+      const slides = [];
+
+      // Title slide
+      slides.push({
+        type: 'title',
+        headline: brandData?.companyName || sum.topic,
+        subtitle: brandData?.companyTagline || `For ${sum.audience}`,
+        speakerNotes: `Opening slide for ${sum.topic} presentation.`
+      });
+
+      // Extract content from conversation for additional slides
+      const numContentSlides = Math.max(1, (sum.slides || 5) - 2);
+
+      // Generate placeholder content slides based on topic
+      for (let i = 0; i < numContentSlides; i++) {
+        slides.push({
+          type: 'content',
+          headline: `Key Point ${i + 1}`,
+          bullets: [
+            'Add your main point here',
+            'Supporting detail or data',
+            'Another supporting point',
+            'Call to action or conclusion'
+          ],
+          speakerNotes: `Discuss key point ${i + 1} with supporting evidence.`
+        });
+      }
+
+      // Closing slide
+      slides.push({
+        type: 'title',
+        headline: 'Thank You',
+        subtitle: 'Questions?',
+        speakerNotes: 'Closing slide - open for questions and discussion.'
+      });
+
+      return slides;
+    }
+
+    /**
+     * Download PPTX locally using current brand kit and summary
+     */
+    async function downloadPptxLocally() {
+      if (!summary) {
+        alert('No presentation data available');
+        return;
+      }
+
+      const button = event.target.closest('button');
+      const originalText = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = `
+        <div class="spinner" style="width:16px;height:16px;border-width:2px;margin-right:8px"></div>
+        Generating...
+      `;
+
+      try {
+        const brandData = getBrandKitForGeneration();
+
+        // Create slide data from summary
+        const slideData = generatedSlideData || createSlideDataFromSummary(summary, conversation);
+
+        // Generate PPTX
+        await generatePptxLocally(slideData, brandData);
+
+        button.innerHTML = `
+          <i data-lucide="check" style="width:18px;height:18px"></i>
+          Downloaded!
+        `;
+        lucide.createIcons();
+
+        setTimeout(() => {
+          button.disabled = false;
+          button.innerHTML = originalText;
+          lucide.createIcons();
+        }, 2000);
+      } catch (error) {
+        console.error('PPTX generation failed:', error);
+        button.disabled = false;
+        button.innerHTML = originalText;
+        lucide.createIcons();
+        alert('Failed to generate PPTX: ' + error.message);
+      }
+    }
+
+    // Make functions globally accessible
+    window.generatePptxLocally = generatePptxLocally;
+    window.downloadPptxLocally = downloadPptxLocally;
+    window.openBrandKit = openBrandKit;
+    window.closeBrandKit = closeBrandKit;
+    window.saveBrandKit = saveBrandKit;
+    window.removeLogo = removeLogo;
+
+    // ===== SLIDE PREVIEW FUNCTIONALITY =====
+
+    // Preview state
+    let previewVisible = false;
+    let currentSlideIndex = 0;
+    let previewSlides = [];
+
+    // DOM elements for preview
+    const chatPanel = $('chatPanel');
+    const previewPanel = $('previewPanel');
+    const previewToggleBtn = $('previewToggleBtn');
+    const previewEmpty = $('previewEmpty');
+    const slidePreviewWrapper = $('slidePreviewWrapper');
+    const slidePreviewContent = $('slidePreviewContent');
+    const slideThumbnails = $('slideThumbnails');
+    const slideCounter = $('slideCounter');
+    const prevSlideBtn = $('prevSlideBtn');
+    const nextSlideBtn = $('nextSlideBtn');
+
+    /**
+     * Toggle the preview panel visibility
+     */
+    function togglePreview() {
+      previewVisible = !previewVisible;
+
+      if (previewVisible) {
+        chatPanel.classList.add('with-preview');
+        previewPanel.classList.remove('collapsed');
+        previewToggleBtn.classList.add('active');
+        $('previewToggleText').textContent = 'Hide';
+      } else {
+        chatPanel.classList.remove('with-preview');
+        previewPanel.classList.add('collapsed');
+        previewToggleBtn.classList.remove('active');
+        $('previewToggleText').textContent = 'Preview';
+      }
+
+      lucide.createIcons();
+    }
+
+    /**
+     * Update the preview with slide data
+     * @param {Array} slides - Array of slide objects
+     */
+    function updatePreview(slides) {
+      if (!slides || slides.length === 0) {
+        // Show empty state
+        previewEmpty.classList.remove('hidden');
+        slidePreviewWrapper.classList.add('hidden');
+        slideThumbnails.classList.add('hidden');
+        previewSlides = [];
+        return;
+      }
+
+      previewSlides = slides;
+      currentSlideIndex = 0;
+
+      // Hide empty state, show preview
+      previewEmpty.classList.add('hidden');
+      slidePreviewWrapper.classList.remove('hidden');
+      slideThumbnails.classList.remove('hidden');
+
+      // Render thumbnails
+      renderThumbnails();
+
+      // Select first slide
+      selectSlide(0);
+
+      // Auto-show preview panel if slides are being generated
+      if (!previewVisible) {
+        togglePreview();
+      }
+    }
+
+    /**
+     * Select and display a specific slide
+     * @param {number} index - The slide index to display
+     */
+    function selectSlide(index) {
+      if (index < 0 || index >= previewSlides.length) return;
+
+      currentSlideIndex = index;
+      const slide = previewSlides[index];
+
+      // Update slide counter
+      slideCounter.textContent = `${index + 1} / ${previewSlides.length}`;
+
+      // Update nav buttons
+      prevSlideBtn.disabled = index === 0;
+      nextSlideBtn.disabled = index === previewSlides.length - 1;
+
+      // Render the slide content
+      renderSlide(slide);
+
+      // Update thumbnail selection
+      document.querySelectorAll('.slide-thumbnail').forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === index);
+      });
+
+      // Scroll thumbnail into view
+      const activeThumbnail = slideThumbnails.children[index];
+      if (activeThumbnail) {
+        activeThumbnail.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+
+      lucide.createIcons();
+    }
+
+    /**
+     * Render a single slide in the main preview area
+     * @param {Object} slide - The slide data
+     */
+    function renderSlide(slide) {
+      const brandData = getBrandKitForGeneration();
+      const colors = brandData?.colors || {
+        primary: '#2563eb',
+        secondary: '#1e40af',
+        accent: '#f59e0b',
+        background: '#ffffff'
+      };
+
+      const isTitle = slide.type === 'title' || (!slide.type && currentSlideIndex === 0);
+      const bgColor = isTitle ? colors.primary : colors.background;
+      const textColor = isContrastLight(bgColor) ? '#2a2520' : '#ffffff';
+
+      // Build slide HTML
+      let html = '';
+
+      if (isTitle) {
+        // Title slide layout
+        slidePreviewContent.style.background = bgColor;
+        slidePreviewContent.style.color = textColor;
+        slidePreviewContent.classList.remove('left-align');
+
+        html = `
+          <h2 style="color: ${textColor}">${escapeHtml(slide.headline || slide.title || 'Title')}</h2>
+          ${slide.subtitle ? `<p style="color: ${textColor}; opacity: 0.8">${escapeHtml(slide.subtitle)}</p>` : ''}
+        `;
+      } else {
+        // Content slide layout
+        slidePreviewContent.style.background = bgColor;
+        slidePreviewContent.style.color = textColor;
+        slidePreviewContent.classList.add('left-align');
+
+        html = `
+          <h2 style="color: ${colors.primary}; margin-bottom: 16px">${escapeHtml(slide.headline || slide.title || 'Slide')}</h2>
+        `;
+
+        if (slide.bullets && slide.bullets.length > 0) {
+          html += `<ul style="color: ${textColor}">`;
+          slide.bullets.forEach(bullet => {
+            html += `<li>${escapeHtml(bullet)}</li>`;
+          });
+          html += '</ul>';
+        } else if (slide.content) {
+          html += `<p style="color: ${textColor}">${escapeHtml(slide.content)}</p>`;
+        }
+
+        // Add accent bar at bottom
+        html += `<div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: ${colors.accent}"></div>`;
+      }
+
+      slidePreviewContent.innerHTML = html;
+    }
+
+    /**
+     * Render all slide thumbnails
+     */
+    function renderThumbnails() {
+      const brandData = getBrandKitForGeneration();
+      const colors = brandData?.colors || {
+        primary: '#2563eb',
+        background: '#ffffff'
+      };
+
+      slideThumbnails.innerHTML = '';
+
+      previewSlides.forEach((slide, index) => {
+        const isTitle = slide.type === 'title' || (!slide.type && index === 0);
+        const bgColor = isTitle ? colors.primary : colors.background;
+        const textColor = isContrastLight(bgColor) ? '#2a2520' : '#ffffff';
+
+        const thumb = document.createElement('div');
+        thumb.className = `slide-thumbnail ${index === currentSlideIndex ? 'active' : ''}`;
+        thumb.onclick = () => selectSlide(index);
+
+        thumb.innerHTML = `
+          <div class="slide-thumbnail-content" style="background: ${bgColor}">
+            <h4 style="color: ${textColor}">${escapeHtml((slide.headline || slide.title || 'Slide ' + (index + 1)).substring(0, 20))}</h4>
+          </div>
+        `;
+
+        slideThumbnails.appendChild(thumb);
+      });
+    }
+
+    /**
+     * Check if a color should have light or dark text
+     * @param {string} hexColor - Hex color value
+     * @returns {boolean} - True if should use dark text
+     */
+    function isContrastLight(hexColor) {
+      const hex = hexColor.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance > 0.5;
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     * @param {string} text - Text to escape
+     * @returns {string} - Escaped HTML
+     */
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /**
+     * Clear the preview (e.g., when starting a new session)
+     */
+    function clearPreview() {
+      previewSlides = [];
+      currentSlideIndex = 0;
+      previewEmpty.classList.remove('hidden');
+      slidePreviewWrapper.classList.add('hidden');
+      slideThumbnails.classList.add('hidden');
+      slideThumbnails.innerHTML = '';
+      slidePreviewContent.innerHTML = '';
+    }
+
+    // Expose preview functions globally
+    window.togglePreview = togglePreview;
+    window.updatePreview = updatePreview;
+    window.selectSlide = selectSlide;
+    window.clearPreview = clearPreview;
+
+    // Override reset to also clear preview
+    const originalReset = reset;
+    window.reset = function() {
+      clearPreview();
+      originalReset();
+    };
+
+    // ===== AI LAYOUT SUGGESTIONS =====
+
+    // Layout definitions with metadata
+    const LAYOUT_TEMPLATES = {
+      'layout-centered': {
+        name: 'Centered',
+        description: 'Centered headline and bullets',
+        icon: 'align-center',
+        suitableFor: ['short-text', 'title', 'quote'],
+        thumbnail: () => `
+          <div class="layout-thumbnail-inner" style="align-items:center;justify-content:center;text-align:center">
+            <div class="mini-title" style="width:60%;margin:0 auto"></div>
+            <div class="mini-bullet" style="width:70%;margin:4px auto"></div>
+            <div class="mini-bullet" style="width:55%;margin:0 auto"></div>
+          </div>
+        `
+      },
+      'layout-left-image': {
+        name: 'Left Image',
+        description: 'Image on left, text on right',
+        icon: 'layout',
+        suitableFor: ['has-image', 'visual'],
+        thumbnail: () => `
+          <div class="layout-thumbnail-inner" style="flex-direction:row;padding:0;gap:0">
+            <div class="mini-image" style="width:40%;height:100%"></div>
+            <div style="flex:1;padding:8px;display:flex;flex-direction:column;gap:3px;justify-content:center">
+              <div class="mini-title" style="width:80%"></div>
+              <div class="mini-bullet" style="width:90%"></div>
+              <div class="mini-bullet" style="width:70%"></div>
+            </div>
+          </div>
+        `
+      },
+      'layout-right-image': {
+        name: 'Right Image',
+        description: 'Text on left, image on right',
+        icon: 'layout',
+        suitableFor: ['has-image', 'visual'],
+        thumbnail: () => `
+          <div class="layout-thumbnail-inner" style="flex-direction:row-reverse;padding:0;gap:0">
+            <div class="mini-image" style="width:40%;height:100%"></div>
+            <div style="flex:1;padding:8px;display:flex;flex-direction:column;gap:3px;justify-content:center">
+              <div class="mini-title" style="width:80%"></div>
+              <div class="mini-bullet" style="width:90%"></div>
+              <div class="mini-bullet" style="width:70%"></div>
+            </div>
+          </div>
+        `
+      },
+      'layout-full-image': {
+        name: 'Full Image',
+        description: 'Full-bleed image with text overlay',
+        icon: 'image',
+        suitableFor: ['has-image', 'visual', 'dramatic'],
+        thumbnail: () => `
+          <div class="layout-thumbnail-inner" style="padding:0;position:relative">
+            <div class="mini-image" style="position:absolute;inset:0"></div>
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:8px;background:linear-gradient(transparent,rgba(0,0,0,0.6))">
+              <div class="mini-title" style="background:white;width:70%"></div>
+              <div class="mini-bullet" style="background:rgba(255,255,255,0.7);width:50%;margin-top:3px"></div>
+            </div>
+          </div>
+        `
+      },
+      'layout-two-column': {
+        name: 'Two Column',
+        description: 'Bullets in two columns',
+        icon: 'columns',
+        suitableFor: ['many-bullets', 'comparison', 'list'],
+        thumbnail: () => `
+          <div class="layout-thumbnail-inner">
+            <div class="mini-title" style="width:60%"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin-top:4px">
+              <div class="mini-bullet"></div>
+              <div class="mini-bullet"></div>
+              <div class="mini-bullet"></div>
+              <div class="mini-bullet"></div>
+              <div class="mini-bullet"></div>
+              <div class="mini-bullet"></div>
+            </div>
+          </div>
+        `
+      },
+      'layout-quote': {
+        name: 'Quote',
+        description: 'Large quote with attribution',
+        icon: 'quote',
+        suitableFor: ['short-text', 'quote', 'testimonial'],
+        thumbnail: () => `
+          <div class="layout-thumbnail-inner" style="align-items:center;justify-content:center;text-align:center">
+            <div style="font-size:20px;opacity:0.2;line-height:1">"</div>
+            <div class="mini-title" style="width:80%;margin:0 auto;font-style:italic"></div>
+            <div class="mini-subtitle" style="width:40%;margin:6px auto 0"></div>
+          </div>
+        `
+      },
+      'layout-stats': {
+        name: 'Stats',
+        description: 'Big numbers with labels',
+        icon: 'bar-chart-2',
+        suitableFor: ['has-numbers', 'data', 'metrics'],
+        thumbnail: () => `
+          <div class="layout-thumbnail-inner">
+            <div class="mini-title" style="width:50%"></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;text-align:center">
+              <div><div class="mini-stat">42%</div><div class="mini-stat-label" style="margin:2px auto;width:60%"></div></div>
+              <div><div class="mini-stat">$5M</div><div class="mini-stat-label" style="margin:2px auto;width:60%"></div></div>
+              <div><div class="mini-stat">10x</div><div class="mini-stat-label" style="margin:2px auto;width:60%"></div></div>
+            </div>
+          </div>
+        `
+      }
+    };
+
+    // Current layout picker state
+    let layoutPickerState = {
+      slideIndex: null,
+      currentLayout: null
+    };
+
+    /**
+     * Analyze slide content to determine suitable layouts
+     * @param {Object} slideContent - Slide data with headline, bullets, imageUrl
+     * @returns {Array} - Array of layout names sorted by suitability
+     */
+    function getLayoutsForContent(slideContent) {
+      const scores = {};
+      const traits = [];
+
+      // Analyze content traits
+      if (slideContent.imageUrl) traits.push('has-image', 'visual');
+      if (slideContent.bullets && slideContent.bullets.length > 4) traits.push('many-bullets', 'list');
+      if (slideContent.bullets && slideContent.bullets.length <= 2) traits.push('short-text');
+      if (slideContent.headline && slideContent.headline.length < 50) traits.push('short-text');
+      if (slideContent.headline && /["']/.test(slideContent.headline)) traits.push('quote', 'testimonial');
+      if (slideContent.bullets && slideContent.bullets.some(b => /\d+%|\$\d+|\d+x|\d+k/i.test(b))) traits.push('has-numbers', 'data', 'metrics');
+      if (!slideContent.bullets || slideContent.bullets.length === 0) traits.push('title', 'dramatic');
+
+      // Score each layout based on matching traits
+      Object.entries(LAYOUT_TEMPLATES).forEach(([name, layout]) => {
+        let score = 0;
+        layout.suitableFor.forEach(trait => {
+          if (traits.includes(trait)) score += 10;
+        });
+        // Bonus for image layouts when image exists
+        if (traits.includes('has-image') && name.includes('image')) score += 5;
+        scores[name] = score;
+      });
+
+      // Sort by score and return layout names
+      return Object.entries(scores)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name]) => name);
+    }
+
+    /**
+     * Render layout thumbnail HTML
+     * @param {string} layoutName - Layout class name
+     * @param {Object} slideContent - Optional slide content for preview
+     * @returns {string} - HTML string
+     */
+    function renderLayoutThumbnail(layoutName, slideContent) {
+      const layout = LAYOUT_TEMPLATES[layoutName];
+      if (!layout) return '';
+      return layout.thumbnail(slideContent);
+    }
+
+    /**
+     * Show the layout picker modal
+     * @param {number} slideIndex - Index of slide to change layout
+     */
+    function showLayoutPicker(slideIndex) {
+      layoutPickerState.slideIndex = slideIndex;
+
+      // Get current slide content
+      const slideContent = previewSlides ? previewSlides[slideIndex] : {};
+      layoutPickerState.currentLayout = slideContent.layout || null;
+
+      // Get recommended layouts
+      const recommendedLayouts = getLayoutsForContent(slideContent);
+      const topRecommended = recommendedLayouts.slice(0, 2);
+
+      // Render layout grid
+      const layoutGrid = document.getElementById('layoutGrid');
+      layoutGrid.innerHTML = Object.entries(LAYOUT_TEMPLATES).map(([name, layout]) => {
+        const isSelected = layoutPickerState.currentLayout === name;
+        const isRecommended = topRecommended.includes(name);
+        return `
+          <div class="layout-thumbnail ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''}"
+               onclick="applyLayout(${slideIndex}, '${name}')"
+               title="${layout.description}">
+            ${renderLayoutThumbnail(name, slideContent)}
+            <div class="layout-thumbnail-name">${layout.name}</div>
+          </div>
+        `;
+      }).join('');
+
+      // Show modal
+      const overlay = document.getElementById('layoutPickerOverlay');
+      overlay.classList.add('visible');
+      lucide.createIcons();
+    }
+
+    /**
+     * Close the layout picker modal
+     * @param {Event} event - Optional click event
+     */
+    function closeLayoutPicker(event) {
+      if (event && event.target !== event.currentTarget) return;
+      const overlay = document.getElementById('layoutPickerOverlay');
+      overlay.classList.remove('visible');
+      layoutPickerState.slideIndex = null;
+    }
+
+    /**
+     * Apply a layout to a slide
+     * @param {number} slideIndex - Index of slide
+     * @param {string} layoutName - Layout class name to apply
+     */
+    function applyLayout(slideIndex, layoutName) {
+      // Update slide data
+      if (previewSlides && previewSlides[slideIndex]) {
+        previewSlides[slideIndex].layout = layoutName;
+      }
+
+      // Update the slide preview if it's currently displayed
+      const slidePreview = document.querySelector('.slide-preview');
+      if (slidePreview && currentSlideIndex === slideIndex) {
+        // Remove old layout classes
+        Object.keys(LAYOUT_TEMPLATES).forEach(cls => {
+          slidePreview.classList.remove(cls);
+        });
+
+        // Add new layout class with transition
+        slidePreview.classList.add('layout-transitioning');
+        slidePreview.classList.add(layoutName);
+
+        // Rebuild content structure for image layouts
+        rebuildSlideContentForLayout(slidePreview, previewSlides[slideIndex], layoutName);
+
+        // Remove transition class after animation
+        setTimeout(() => {
+          slidePreview.classList.remove('layout-transitioning');
+        }, 400);
+      }
+
+      // Update thumbnail selection in picker
+      document.querySelectorAll('.layout-thumbnail').forEach(thumb => {
+        thumb.classList.remove('selected');
+      });
+      event.target.closest('.layout-thumbnail').classList.add('selected');
+
+      // Close picker after short delay
+      setTimeout(() => {
+        closeLayoutPicker();
+      }, 300);
+    }
+
+    /**
+     * Rebuild slide content structure for specific layouts
+     * @param {HTMLElement} slidePreview - Slide preview element
+     * @param {Object} slideData - Slide data
+     * @param {string} layoutName - Layout to apply
+     */
+    function rebuildSlideContentForLayout(slidePreview, slideData, layoutName) {
+      const content = slidePreview.querySelector('.slide-preview-content');
+      if (!content || !slideData) return;
+
+      const headline = slideData.headline || '';
+      const bullets = slideData.bullets || [];
+      const imageUrl = slideData.imageUrl || '';
+
+      // Different HTML structures for different layouts
+      if (layoutName === 'layout-left-image' || layoutName === 'layout-right-image') {
+        content.innerHTML = `
+          <div class="slide-image-container"${imageUrl ? ` style="background-image:url('${imageUrl}');background-size:cover;background-position:center"` : ''}></div>
+          <div class="slide-text-container">
+            <h2 contenteditable="true">${escapeHtml(headline)}</h2>
+            ${bullets.length > 0 ? `<ul>${bullets.map(b => `<li contenteditable="true">${escapeHtml(b)}</li>`).join('')}</ul>` : ''}
+          </div>
+        `;
+      } else if (layoutName === 'layout-full-image') {
+        content.innerHTML = `
+          <div class="slide-image-container"${imageUrl ? ` style="background-image:url('${imageUrl}');background-size:cover;background-position:center"` : ''}></div>
+          <div class="slide-text-overlay">
+            <h2 contenteditable="true">${escapeHtml(headline)}</h2>
+            ${bullets.length > 0 ? `<ul>${bullets.map(b => `<li contenteditable="true">${escapeHtml(b)}</li>`).join('')}</ul>` : ''}
+          </div>
+        `;
+      } else if (layoutName === 'layout-stats' && bullets.length >= 3) {
+        // Try to extract numbers from bullets for stats layout
+        const statsHtml = bullets.slice(0, 3).map(b => {
+          const match = b.match(/(\d+%?|\$[\d.]+[KMB]?|\d+x)/i);
+          const number = match ? match[1] : '--';
+          const label = b.replace(match ? match[0] : '', '').trim().substring(0, 20);
+          return `<div class="stat-item"><div class="stat-number">${number}</div><div class="stat-label">${escapeHtml(label)}</div></div>`;
+        }).join('');
+
+        content.innerHTML = `
+          <h2 contenteditable="true">${escapeHtml(headline)}</h2>
+          <div class="slide-stats-grid">${statsHtml}</div>
+        `;
+      } else {
+        // Default structure for centered, two-column, quote layouts
+        content.innerHTML = `
+          <h2 contenteditable="true">${escapeHtml(headline)}</h2>
+          ${bullets.length > 0 ? `<ul>${bullets.map(b => `<li contenteditable="true">${escapeHtml(b)}</li>`).join('')}</ul>` : ''}
+        `;
+      }
+    }
+
+    /**
+     * Add layout button to slide toolbar
+     * Call this when rendering slides to add the suggest layouts button
+     */
+    function addLayoutButtonToSlide(slideElement, slideIndex) {
+      // Check if toolbar already exists
+      let toolbar = slideElement.querySelector('.slide-toolbar');
+      if (!toolbar) {
+        toolbar = document.createElement('div');
+        toolbar.className = 'slide-toolbar';
+        slideElement.appendChild(toolbar);
+      }
+
+      // Add layout button if not exists
+      if (!toolbar.querySelector('.layout-btn')) {
+        const layoutBtn = document.createElement('button');
+        layoutBtn.className = 'slide-toolbar-btn layout-btn';
+        layoutBtn.title = 'Suggest Layouts';
+        layoutBtn.innerHTML = '<i data-lucide="layout" style="width:16px;height:16px"></i>';
+        layoutBtn.onclick = (e) => {
+          e.stopPropagation();
+          showLayoutPicker(slideIndex);
+        };
+        toolbar.insertBefore(layoutBtn, toolbar.firstChild);
+        lucide.createIcons();
+      }
+    }
+
+    // Expose layout functions globally
+    window.showLayoutPicker = showLayoutPicker;
+    window.closeLayoutPicker = closeLayoutPicker;
+    window.applyLayout = applyLayout;
+    window.getLayoutsForContent = getLayoutsForContent;
+    window.renderLayoutThumbnail = renderLayoutThumbnail;
+    window.addLayoutButtonToSlide = addLayoutButtonToSlide;
+    window.LAYOUT_TEMPLATES = LAYOUT_TEMPLATES;
+
+    // ===== EDITABLE SLIDES FUNCTIONALITY =====
+
+    // Edit state
+    let originalSlides = [];      // Store original AI-generated slides
+    let editedSlides = [];        // Store edited versions
+    let editingSlideIndex = -1;   // Currently editing slide index (-1 = not editing)
+    let modifiedSlideIndices = new Set(); // Track which slides have been modified
+    let currentEditingImageSlideIndex = -1; // For image replacement
+
+    /**
+     * Deep clone slide data for storage
+     */
+    function cloneSlide(slide) {
+      return JSON.parse(JSON.stringify(slide));
+    }
+
+    /**
+     * Store original slides when preview data is loaded
+     */
+    function storeOriginalSlides(slides) {
+      originalSlides = slides.map(s => cloneSlide(s));
+      editedSlides = slides.map(s => cloneSlide(s));
+      modifiedSlideIndices.clear();
+    }
+
+    /**
+     * Enter edit mode for a specific slide
+     */
+    function enterEditMode(slideIndex) {
+      if (slideIndex < 0 || slideIndex >= editedSlides.length) return;
+
+      editingSlideIndex = slideIndex;
+
+      // Show edit toolbar
+      const toolbar = document.getElementById('editToolbar');
+      if (toolbar) {
+        toolbar.classList.add('visible');
+      }
+
+      // Add editing class to slide preview
+      const slidePreviewEl = document.querySelector('.slide-preview');
+      if (slidePreviewEl) {
+        slidePreviewEl.classList.add('slide-editing');
+      }
+
+      // Render editable slide content
+      renderEditableSlide(slideIndex);
+
+      // Reinitialize icons
+      lucide.createIcons();
+    }
+
+    /**
+     * Exit edit mode and save changes
+     */
+    function exitEditMode() {
+      if (editingSlideIndex === -1) return;
+
+      // Save any pending edits
+      saveCurrentEdits();
+
+      // Hide edit toolbar
+      const toolbar = document.getElementById('editToolbar');
+      if (toolbar) {
+        toolbar.classList.remove('visible');
+      }
+
+      // Remove editing class from slide preview
+      const slidePreviewEl = document.querySelector('.slide-preview');
+      if (slidePreviewEl) {
+        slidePreviewEl.classList.remove('slide-editing');
+      }
+
+      // Update preview slide data with edited content
+      if (previewSlides && previewSlides[editingSlideIndex]) {
+        previewSlides[editingSlideIndex] = cloneSlide(editedSlides[editingSlideIndex]);
+      }
+
+      // Re-render normal slide view
+      const prevEditingIndex = editingSlideIndex;
+      editingSlideIndex = -1;
+
+      // Update the slide display
+      updateSlidePreview(prevEditingIndex);
+
+      // Update thumbnail if modified
+      updateThumbnailModifiedState(prevEditingIndex);
+
+      // Reinitialize icons
+      lucide.createIcons();
+    }
+
+    /**
+     * Save current edits from contenteditable elements
+     */
+    function saveCurrentEdits() {
+      if (editingSlideIndex === -1) return;
+
+      const slide = editedSlides[editingSlideIndex];
+      if (!slide) return;
+
+      // Save headline
+      const headlineEl = document.querySelector('.editable-headline');
+      if (headlineEl) {
+        const newHeadline = headlineEl.textContent.trim();
+        if (newHeadline !== slide.headline) {
+          slide.headline = newHeadline;
+          markSlideAsModified(editingSlideIndex);
+        }
+      }
+
+      // Save subtitle
+      const subtitleEl = document.querySelector('.editable-subtitle');
+      if (subtitleEl) {
+        const newSubtitle = subtitleEl.textContent.trim();
+        if (newSubtitle !== slide.subtitle) {
+          slide.subtitle = newSubtitle;
+          markSlideAsModified(editingSlideIndex);
+        }
+      }
+
+      // Save bullets
+      const bulletEls = document.querySelectorAll('.editable-bullet-item .bullet-text');
+      if (bulletEls.length > 0) {
+        const newBullets = Array.from(bulletEls).map(el => el.textContent.trim());
+        if (JSON.stringify(newBullets) !== JSON.stringify(slide.bullets)) {
+          slide.bullets = newBullets;
+          markSlideAsModified(editingSlideIndex);
+        }
+      }
+
+      // Save speaker notes
+      const notesEl = document.querySelector('.speaker-notes-textarea');
+      if (notesEl) {
+        const newNotes = notesEl.value.trim();
+        if (newNotes !== (slide.speakerNotes || '')) {
+          slide.speakerNotes = newNotes;
+          markSlideAsModified(editingSlideIndex);
+        }
+      }
+    }
+
+    /**
+     * Update specific slide content field
+     */
+    function updateSlideContentField(slideIndex, field, value) {
+      if (slideIndex < 0 || slideIndex >= editedSlides.length) return;
+
+      const slide = editedSlides[slideIndex];
+      if (!slide) return;
+
+      const originalValue = slide[field];
+      slide[field] = value;
+
+      // Check if value actually changed
+      if (JSON.stringify(originalValue) !== JSON.stringify(value)) {
+        markSlideAsModified(slideIndex);
+      }
+    }
+
+    /**
+     * Mark a slide as modified
+     */
+    function markSlideAsModified(slideIndex) {
+      modifiedSlideIndices.add(slideIndex);
+      updateThumbnailModifiedState(slideIndex);
+    }
+
+    /**
+     * Update thumbnail to show modified indicator
+     */
+    function updateThumbnailModifiedState(slideIndex) {
+      const thumbnails = document.querySelectorAll('.slide-thumbnail');
+      if (thumbnails[slideIndex]) {
+        if (modifiedSlideIndices.has(slideIndex)) {
+          thumbnails[slideIndex].classList.add('modified');
+        } else {
+          thumbnails[slideIndex].classList.remove('modified');
+        }
+      }
+    }
+
+    /**
+     * Add a new bullet point to the current slide
+     */
+    function addBullet(slideIndex) {
+      if (slideIndex === undefined) slideIndex = editingSlideIndex;
+      if (slideIndex < 0 || slideIndex >= editedSlides.length) return;
+
+      const slide = editedSlides[slideIndex];
+      if (!slide.bullets) slide.bullets = [];
+
+      slide.bullets.push('New bullet point');
+      markSlideAsModified(slideIndex);
+
+      // Re-render if in edit mode
+      if (editingSlideIndex === slideIndex) {
+        renderEditableSlide(slideIndex);
+        lucide.createIcons();
+      }
+    }
+
+    /**
+     * Remove a bullet point from the current slide
+     */
+    function removeBullet(slideIndex, bulletIndex) {
+      if (slideIndex === undefined) slideIndex = editingSlideIndex;
+      if (slideIndex < 0 || slideIndex >= editedSlides.length) return;
+
+      const slide = editedSlides[slideIndex];
+      if (!slide.bullets || bulletIndex < 0 || bulletIndex >= slide.bullets.length) return;
+
+      // Save current edits before removing
+      saveCurrentEdits();
+
+      slide.bullets.splice(bulletIndex, 1);
+      markSlideAsModified(slideIndex);
+
+      // Re-render if in edit mode
+      if (editingSlideIndex === slideIndex) {
+        renderEditableSlide(slideIndex);
+        lucide.createIcons();
+      }
+    }
+
+    /**
+     * Revert a slide to its original content
+     */
+    function revertSlide(slideIndex) {
+      if (slideIndex < 0 || slideIndex >= originalSlides.length) return;
+
+      editedSlides[slideIndex] = cloneSlide(originalSlides[slideIndex]);
+      modifiedSlideIndices.delete(slideIndex);
+      updateThumbnailModifiedState(slideIndex);
+
+      // Update preview slide data
+      if (previewSlides && previewSlides[slideIndex]) {
+        previewSlides[slideIndex] = cloneSlide(originalSlides[slideIndex]);
+      }
+
+      // Re-render if in edit mode
+      if (editingSlideIndex === slideIndex) {
+        renderEditableSlide(slideIndex);
+        lucide.createIcons();
+      } else {
+        // Update normal view
+        if (currentSlideIndex === slideIndex) {
+          updateSlidePreview(slideIndex);
+        }
+      }
+    }
+
+    /**
+     * Revert the currently editing slide
+     */
+    function revertCurrentSlide() {
+      if (editingSlideIndex !== -1) {
+        revertSlide(editingSlideIndex);
+      }
+    }
+
+    /**
+     * Render the editable version of a slide
+     */
+    function renderEditableSlide(slideIndex) {
+      const slide = editedSlides[slideIndex];
+      if (!slide) return;
+
+      const previewContentEl = document.getElementById('slidePreviewContent');
+      if (!previewContentEl) return;
+
+      const isModified = modifiedSlideIndices.has(slideIndex);
+      const slideType = slide.type || (slideIndex === 0 ? 'title' : 'content');
+
+      let html = '';
+
+      // Modified badge
+      if (isModified) {
+        html += '<div class="slide-modified-badge">Modified</div>';
+      }
+
+      if (slideType === 'title') {
+        // Title slide - centered
+        html += `
+          <div style="text-align:center;width:100%;">
+            <h2 class="editable-text editable-headline" contenteditable="true" style="font-family:'Fraunces',serif;font-size:clamp(18px,3vw,32px);margin-bottom:12px">${escapeHtmlEdit(slide.headline || '')}</h2>
+            <p class="editable-text editable-subtitle" contenteditable="true" style="font-size:clamp(12px,1.5vw,18px);color:var(--muted)">${escapeHtmlEdit(slide.subtitle || '')}</p>
+          </div>
+        `;
+        previewContentEl.className = 'slide-preview-content';
+        previewContentEl.style.justifyContent = 'center';
+        previewContentEl.style.alignItems = 'center';
+        previewContentEl.style.textAlign = 'center';
+      } else {
+        // Content slide
+        html += `
+          <h2 class="editable-text editable-headline" contenteditable="true" style="font-family:'Fraunces',serif;font-size:clamp(14px,2.5vw,24px);margin-bottom:12px;text-align:left">${escapeHtmlEdit(slide.headline || '')}</h2>
+        `;
+
+        // Bullets
+        if (slide.bullets && slide.bullets.length > 0) {
+          html += '<ul class="editable-bullets">';
+          slide.bullets.forEach((bullet, i) => {
+            html += `
+              <li class="editable-bullet-item">
+                <span class="bullet-text editable-text" contenteditable="true">${escapeHtmlEdit(bullet)}</span>
+                <div class="bullet-actions">
+                  <button class="bullet-action-btn delete" onclick="removeBullet(${slideIndex}, ${i})" title="Remove bullet">
+                    <i data-lucide="x" style="width:12px;height:12px"></i>
+                  </button>
+                </div>
+              </li>
+            `;
+          });
+          html += '</ul>';
+        }
+
+        // Add bullet button
+        html += `
+          <button class="add-bullet-btn" onclick="addBullet(${slideIndex})">
+            <i data-lucide="plus" style="width:14px;height:14px"></i>
+            Add bullet
+          </button>
+        `;
+
+        // Image (if present)
+        if (slide.imageUrl) {
+          html += `
+            <div class="editable-image-container" onclick="openImageSearch(${slideIndex})" style="margin-top:16px;max-width:200px">
+              <img src="${slide.imageUrl}" alt="Slide image">
+              <div class="editable-image-overlay">
+                <i data-lucide="image" style="width:24px;height:24px;color:white"></i>
+                <span>Click to change</span>
+              </div>
+            </div>
+          `;
+        } else {
+          // Add image button
+          html += `
+            <button class="add-bullet-btn" onclick="openImageSearch(${slideIndex})" style="margin-top:8px">
+              <i data-lucide="image" style="width:14px;height:14px"></i>
+              Add image
+            </button>
+          `;
+        }
+
+        previewContentEl.className = 'slide-preview-content left-align';
+        previewContentEl.style.justifyContent = 'flex-start';
+        previewContentEl.style.alignItems = 'flex-start';
+        previewContentEl.style.textAlign = 'left';
+      }
+
+      // Speaker notes section
+      html += `
+        <div class="speaker-notes-container" id="speakerNotesContainer">
+          <div class="speaker-notes-header" onclick="toggleSpeakerNotes()">
+            <h4>
+              <i data-lucide="message-square" style="width:14px;height:14px"></i>
+              Speaker Notes
+            </h4>
+            <i data-lucide="chevron-down" class="chevron" style="width:16px;height:16px;color:var(--muted)"></i>
+          </div>
+          <div class="speaker-notes-content">
+            <textarea class="speaker-notes-textarea" placeholder="Add speaker notes...">${escapeHtmlEdit(slide.speakerNotes || '')}</textarea>
+          </div>
+        </div>
+      `;
+
+      previewContentEl.innerHTML = html;
+
+      // Add event listeners for contenteditable elements
+      setupEditableListeners();
+    }
+
+    /**
+     * Setup listeners for contenteditable elements
+     */
+    function setupEditableListeners() {
+      // Auto-save on blur
+      document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+        el.addEventListener('blur', () => {
+          saveCurrentEdits();
+        });
+
+        // Update font size display when focusing
+        el.addEventListener('focus', () => {
+          updateFontSizeDisplay(el);
+        });
+      });
+
+      // Speaker notes auto-save
+      const notesEl = document.querySelector('.speaker-notes-textarea');
+      if (notesEl) {
+        notesEl.addEventListener('blur', () => {
+          saveCurrentEdits();
+        });
+      }
+    }
+
+    /**
+     * Toggle speaker notes visibility
+     */
+    function toggleSpeakerNotes() {
+      const container = document.getElementById('speakerNotesContainer');
+      if (container) {
+        container.classList.toggle('expanded');
+      }
+    }
+
+    /**
+     * Change font size of selected text
+     */
+    function changeFontSize(delta) {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+
+      const el = selection.anchorNode?.parentElement;
+      if (!el) return;
+
+      // Get current font size
+      const currentSize = parseInt(window.getComputedStyle(el).fontSize);
+      const newSize = Math.max(10, Math.min(48, currentSize + delta));
+
+      // Apply to selected element
+      el.style.fontSize = newSize + 'px';
+
+      // Update display
+      const fontSizeEl = document.getElementById('currentFontSize');
+      if (fontSizeEl) fontSizeEl.textContent = newSize + 'px';
+    }
+
+    /**
+     * Update font size display for focused element
+     */
+    function updateFontSizeDisplay(el) {
+      const fontSize = parseInt(window.getComputedStyle(el).fontSize);
+      const fontSizeEl = document.getElementById('currentFontSize');
+      if (fontSizeEl) fontSizeEl.textContent = fontSize + 'px';
+    }
+
+    /**
+     * Apply text color to selection
+     */
+    function applyTextColor(color) {
+      document.execCommand('foreColor', false, color);
+    }
+
+    /**
+     * Open image search dialog
+     */
+    function openImageSearch(slideIndex) {
+      currentEditingImageSlideIndex = slideIndex;
+      const dialog = document.getElementById('imageSearchDialog');
+      if (dialog) {
+        dialog.classList.add('visible');
+        // Clear previous results
+        const resultsEl = document.getElementById('imageSearchResults');
+        if (resultsEl) resultsEl.innerHTML = '';
+        const inputEl = document.getElementById('imageSearchInput');
+        if (inputEl) inputEl.value = '';
+        lucide.createIcons();
+      }
+    }
+
+    /**
+     * Close image search dialog
+     */
+    function closeImageSearch() {
+      const dialog = document.getElementById('imageSearchDialog');
+      if (dialog) {
+        dialog.classList.remove('visible');
+      }
+      currentEditingImageSlideIndex = -1;
+    }
+
+    /**
+     * Handle image upload for editing
+     */
+    function handleEditImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file || currentEditingImageSlideIndex === -1) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        updateSlideImage(currentEditingImageSlideIndex, e.target.result);
+        closeImageSearch();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /**
+     * Search for images (placeholder - would connect to Unsplash/Pexels API)
+     */
+    function searchImages() {
+      const inputEl = document.getElementById('imageSearchInput');
+      const query = inputEl ? inputEl.value.trim() : '';
+      if (!query) return;
+
+      const resultsContainer = document.getElementById('imageSearchResults');
+      if (!resultsContainer) return;
+
+      resultsContainer.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Searching...</div>';
+
+      // Placeholder - using placeholder images for demo
+      // In production, this would call Unsplash/Pexels API
+      setTimeout(() => {
+        const placeholderImages = [
+          `https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80`,
+          `https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&q=80`,
+          `https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80`,
+          `https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&q=80`,
+          `https://images.unsplash.com/photo-1553877522-43269d4ea984?w=400&q=80`,
+          `https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&q=80`,
+        ];
+
+        resultsContainer.innerHTML = placeholderImages.map(url => `
+          <div class="image-search-result" onclick="selectSearchImage('${url}')">
+            <img src="${url}" alt="Search result">
+          </div>
+        `).join('');
+      }, 500);
+    }
+
+    /**
+     * Select an image from search results
+     */
+    function selectSearchImage(imageUrl) {
+      if (currentEditingImageSlideIndex === -1) return;
+      updateSlideImage(currentEditingImageSlideIndex, imageUrl);
+      closeImageSearch();
+    }
+
+    /**
+     * Update slide image
+     */
+    function updateSlideImage(slideIndex, imageUrl) {
+      if (slideIndex < 0 || slideIndex >= editedSlides.length) return;
+
+      editedSlides[slideIndex].imageUrl = imageUrl;
+      markSlideAsModified(slideIndex);
+
+      // Update preview slide data
+      if (previewSlides && previewSlides[slideIndex]) {
+        previewSlides[slideIndex].imageUrl = imageUrl;
+      }
+
+      // Re-render if in edit mode
+      if (editingSlideIndex === slideIndex) {
+        renderEditableSlide(slideIndex);
+        lucide.createIcons();
+      }
+    }
+
+    /**
+     * Escape HTML to prevent XSS (for edit mode)
+     */
+    function escapeHtmlEdit(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /**
+     * Handle double-click on slide thumbnail to enter edit mode
+     */
+    function setupThumbnailEditHandler() {
+      document.querySelectorAll('.slide-thumbnail').forEach((thumb, index) => {
+        thumb.addEventListener('dblclick', () => {
+          selectSlide(index);
+          enterEditMode(index);
+        });
+      });
+    }
+
+    // Store original updatePreview for extension
+    const originalUpdatePreviewFn = updatePreview;
+
+    // Override updatePreview to store original slides
+    updatePreview = function(slides) {
+      // Store original slides for revert functionality
+      storeOriginalSlides(slides);
+
+      // Call original function
+      originalUpdatePreviewFn(slides);
+
+      // Setup thumbnail double-click handlers after a short delay
+      setTimeout(setupThumbnailEditHandler, 100);
+    };
+
+    // Store original selectSlide for extension
+    const originalSelectSlideFn = selectSlide;
+
+    // Override selectSlide to support edit mode
+    selectSlide = function(index) {
+      // If in edit mode, render editable version
+      if (editingSlideIndex === index) {
+        renderEditableSlide(index);
+        lucide.createIcons();
+        return;
+      }
+
+      // Otherwise, call original
+      originalSelectSlideFn(index);
+
+      // Add edit button to slide preview
+      const slidePreviewEl = document.querySelector('.slide-preview');
+      if (slidePreviewEl && !slidePreviewEl.querySelector('.slide-edit-btn')) {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'slide-edit-btn';
+        editBtn.innerHTML = '<i data-lucide="edit-2" style="width:14px;height:14px"></i> Edit';
+        editBtn.onclick = () => enterEditMode(index);
+        slidePreviewEl.appendChild(editBtn);
+        lucide.createIcons();
+      }
+    };
+
+    // Override reset to clear edit state
+    const originalResetWithPreview = window.reset;
+    window.reset = function() {
+      exitEditMode();
+      originalSlides = [];
+      editedSlides = [];
+      modifiedSlideIndices.clear();
+      originalResetWithPreview();
+    };
+
+    // Export editable slides functions
+    window.enterEditMode = enterEditMode;
+    window.exitEditMode = exitEditMode;
+    window.updateSlideContent = updateSlideContentField;
+    window.addBullet = addBullet;
+    window.removeBullet = removeBullet;
+    window.revertSlide = revertSlide;
+    window.revertCurrentSlide = revertCurrentSlide;
+    window.toggleSpeakerNotes = toggleSpeakerNotes;
+    window.changeFontSize = changeFontSize;
+    window.applyTextColor = applyTextColor;
+    window.openImageSearch = openImageSearch;
+    window.closeImageSearch = closeImageSearch;
+    window.handleEditImageUpload = handleEditImageUpload;
+    window.searchImages = searchImages;
+    window.selectSearchImage = selectSearchImage;
+    window.getEditedSlides = () => editedSlides;
+    window.getOriginalSlides = () => originalSlides;
+    window.isSlideModified = (index) => modifiedSlideIndices.has(index);
   </script>
 </body>
 </html>
