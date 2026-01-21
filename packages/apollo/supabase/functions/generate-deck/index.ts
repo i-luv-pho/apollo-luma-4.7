@@ -258,18 +258,31 @@ async function waitForGammaCompletion(
         credits: data.credits
       }
 
-      // Gamma returns exportUrl when exportAs is specified
+      // Gamma returns downloadLink when exportAs is specified
+      if (data.downloadLink) {
+        // Check if it's PPTX or PDF based on URL
+        if (data.downloadLink.includes('/pptx/') || data.downloadLink.endsWith('.pptx')) {
+          result.pptxUrl = data.downloadLink
+        } else if (data.downloadLink.includes('/pdf/') || data.downloadLink.endsWith('.pdf')) {
+          result.pdfUrl = data.downloadLink
+        } else {
+          // Default to PPTX since we requested it
+          result.pptxUrl = data.downloadLink
+        }
+      }
+
+      // Also check alternative field names
       if (data.exportUrl) {
         result.pptxUrl = data.exportUrl
       }
-
-      // Also check for exports object with multiple formats
       if (data.exports?.pptx) {
         result.pptxUrl = data.exports.pptx
       }
       if (data.exports?.pdf) {
         result.pdfUrl = data.exports.pdf
       }
+
+      console.log(`[Gamma] Response data: ${JSON.stringify(data)}`)
 
       return result
     }
