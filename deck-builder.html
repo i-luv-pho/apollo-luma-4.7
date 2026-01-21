@@ -679,7 +679,14 @@
   <script>
     lucide.createIcons();
 
-    let accessKey = localStorage.getItem('apollo_access_key') || '';
+    // Security: Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    let accessKey = sessionStorage.getItem('apollo_access_key') || '';
     let currentStep = 'welcome';
     let deckData = { topic: '', slides: 7, generatedHtml: null };
 
@@ -705,7 +712,7 @@
 
     saveKeyBtn.addEventListener('click', () => {
       accessKey = accessKeyInput.value.trim();
-      localStorage.setItem('apollo_access_key', accessKey);
+      sessionStorage.setItem('apollo_access_key', accessKey);
       keyModal.classList.add('hidden');
       startConversation();
     });
@@ -718,7 +725,8 @@
       contentDiv.className = 'content';
 
       if (typeof content === 'string') {
-        contentDiv.innerHTML = content;
+        // Escape user content to prevent XSS
+        contentDiv.innerHTML = isUser ? escapeHtml(content) : content;
       } else {
         contentDiv.appendChild(content);
       }
@@ -764,17 +772,33 @@
               <div class="option-icon"><i data-lucide="rocket" style="width: 18px; height: 18px;"></i></div>
               <span class="option-text">Startup Pitch</span>
             </div>
-            <div class="option-card" onclick="selectType('business plan')">
+            <div class="option-card" onclick="selectType('strategy plan')">
               <div class="option-icon"><i data-lucide="briefcase" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Business Plan</span>
+              <span class="option-text">Strategy Plan</span>
             </div>
-            <div class="option-card" onclick="selectType('product launch')">
-              <div class="option-icon"><i data-lucide="package" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Product Launch</span>
+            <div class="option-card" onclick="selectType('market analysis')">
+              <div class="option-icon"><i data-lucide="bar-chart-2" style="width: 18px; height: 18px;"></i></div>
+              <span class="option-text">Market Analysis</span>
             </div>
-            <div class="option-card" onclick="selectType('sales deck')">
-              <div class="option-icon"><i data-lucide="trending-up" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Sales Deck</span>
+            <div class="option-card" onclick="selectType('quarterly review')">
+              <div class="option-icon"><i data-lucide="presentation" style="width: 18px; height: 18px;"></i></div>
+              <span class="option-text">Quarterly Review</span>
+            </div>
+            <div class="option-card" onclick="selectType('team update')">
+              <div class="option-icon"><i data-lucide="users" style="width: 18px; height: 18px;"></i></div>
+              <span class="option-text">Team Update</span>
+            </div>
+            <div class="option-card" onclick="selectType('project proposal')">
+              <div class="option-icon"><i data-lucide="lightbulb" style="width: 18px; height: 18px;"></i></div>
+              <span class="option-text">Project Proposal</span>
+            </div>
+            <div class="option-card" onclick="selectType('competitive analysis')">
+              <div class="option-icon"><i data-lucide="target" style="width: 18px; height: 18px;"></i></div>
+              <span class="option-text">Competitive Analysis</span>
+            </div>
+            <div class="option-card" onclick="selectType('training deck')">
+              <div class="option-icon"><i data-lucide="graduation-cap" style="width: 18px; height: 18px;"></i></div>
+              <span class="option-text">Training Deck</span>
             </div>
           </div>
         `;
