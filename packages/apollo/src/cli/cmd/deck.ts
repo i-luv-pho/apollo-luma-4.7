@@ -15,6 +15,10 @@ const DECK_DIR = path.join(os.homedir(), "Apollo", "decks")
 const APOLLO_API_URL = "https://advpygqokfxmomlumkgl.supabase.co/functions/v1/generate-deck"
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg"
 
+// Available themes
+const THEMES = ["pure-white", "warm-white", "light-gray", "charcoal", "dark-forest"] as const
+type Theme = typeof THEMES[number]
+
 function getNextDeckId(): string {
   if (!fs.existsSync(DECK_DIR)) {
     fs.mkdirSync(DECK_DIR, { recursive: true })
@@ -39,8 +43,19 @@ function slugify(text: string): string {
 
 interface GenerateDeckResponse {
   success: boolean
+  // New Gamma-based response
+  gammaUrl?: string
+  title?: string
+  slideCount?: number
+  photosUsed?: number
+  gammaCredits?: {
+    deducted: number
+    remaining: number
+  }
+  // Legacy HTML response (fallback)
   html?: string
   researchQueries?: string[]
+  // Common
   usage?: {
     decks_used: number
     decks_limit: number
@@ -49,13 +64,13 @@ interface GenerateDeckResponse {
 }
 
 /**
- * Call Apollo API to generate deck
- * All AI calls happen server-side - user only needs access key
+ * Call Apollo API to generate deck via Claude + Pexels + Gamma pipeline
  */
 async function generateDeckViaAPI(
   accessKey: string,
   topic: string,
   slides: number,
+  theme: Theme,
   documentContext: string,
   assets: Asset[]
 ): Promise<GenerateDeckResponse> {
@@ -69,6 +84,7 @@ async function generateDeckViaAPI(
     body: JSON.stringify({
       topic,
       slides,
+      theme,
       documentContext,
       assets: assets.map(a => ({
         label: a.label,
@@ -89,7 +105,7 @@ async function generateDeckViaAPI(
 
 export const DeckCommand = cmd({
   command: "deck [topic..]",
-  describe: "Generate an AI-powered pitch deck",
+  describe: "Generate an AI-powered pitch deck via Gamma",
   builder: (yargs: Argv) => {
     return yargs
       .positional("topic", {
@@ -103,6 +119,12 @@ export const DeckCommand = cmd({
         default: 7,
         describe: "Number of slides",
       })
+      .option("theme", {
+        type: "string",
+        default: "pure-white",
+        describe: "Color theme (pure-white, warm-white, light-gray, charcoal, dark-forest)",
+        choices: THEMES,
+      })
       .option("open", {
         type: "boolean",
         default: true,
@@ -111,7 +133,7 @@ export const DeckCommand = cmd({
       .option("output", {
         type: "string",
         alias: "o",
-        describe: "Output directory (default: ~/Apollo/decks)",
+        describe: "Output directory for local save (optional)",
       })
       .option("file", {
         type: "string",
@@ -142,7 +164,7 @@ export const DeckCommand = cmd({
     }
 
     UI.println()
-    UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder")
+    UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder (Powered by Gamma)")
     UI.println()
 
     // Fetch user's assets
@@ -207,64 +229,143 @@ export const DeckCommand = cmd({
       UI.println()
     }
 
-    // Create output directory
-    const deckId = getNextDeckId()
-    const slug = slugify(topic)
-    const outputDir = args.output || path.join(DECK_DIR, `${deckId}-${slug}`)
-
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true })
-    }
-
-    const htmlPath = path.join(outputDir, "deck.html")
+    const theme = (args.theme as Theme) || "pure-white"
 
     UI.println(UI.Style.TEXT_DIM + "Topic:  " + UI.Style.TEXT_NORMAL + topic)
-    UI.println(UI.Style.TEXT_DIM + "Output: " + UI.Style.TEXT_NORMAL + outputDir)
+    UI.println(UI.Style.TEXT_DIM + "Theme:  " + UI.Style.TEXT_NORMAL + theme)
+    UI.println(UI.Style.TEXT_DIM + "Slides: " + UI.Style.TEXT_NORMAL + args.slides)
     UI.println()
 
     UI.println(UI.Style.TEXT_INFO_BOLD + "Generating deck..." + UI.Style.TEXT_NORMAL)
-    UI.println()
+    UI.println(UI.Style.TEXT_DIM + "  Stage 1: Claude writing content..." + UI.Style.TEXT_NORMAL)
 
     try {
       const result = await generateDeckViaAPI(
         accessKey,
         topic,
         args.slides,
+        theme,
         documentContext,
         assets
       )
 
-      if (!result.success || !result.html) {
+      if (!result.success) {
         UI.error(result.error || "Generation failed")
         process.exit(1)
       }
 
-      // Show research queries
-      if (result.researchQueries && result.researchQueries.length > 0) {
-        for (const query of result.researchQueries) {
-          UI.println(UI.Style.TEXT_DIM + `  Researched: ${query}` + UI.Style.TEXT_NORMAL)
+      // Handle Gamma URL response (new flow)
+      if (result.gammaUrl) {
+        UI.println(UI.Style.TEXT_DIM + "  Stage 2: Pexels finding photos..." + UI.Style.TEXT_NORMAL)
+        UI.println(UI.Style.TEXT_DIM + "  Stage 3: Gamma creating presentation..." + UI.Style.TEXT_NORMAL)
+        UI.println()
+
+        UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + " Deck generated!")
+        UI.println()
+
+        if (result.title) {
+          UI.println(UI.Style.TEXT_DIM + "Title:  " + UI.Style.TEXT_NORMAL + result.title)
+        }
+        if (result.slideCount) {
+          UI.println(UI.Style.TEXT_DIM + "Slides: " + UI.Style.TEXT_NORMAL + `${result.slideCount} slides`)
+        }
+        if (result.photosUsed !== undefined) {
+          UI.println(UI.Style.TEXT_DIM + "Photos: " + UI.Style.TEXT_NORMAL + `${result.photosUsed} from Pexels`)
         }
         UI.println()
-      }
 
-      // Save HTML file
-      fs.writeFileSync(htmlPath, result.html)
-      UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + " Deck generated!")
+        UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Presentation URL:" + UI.Style.TEXT_NORMAL)
+        UI.println("  " + result.gammaUrl)
+        UI.println()
 
-      // Show usage
-      if (result.usage) {
-        UI.println(UI.Style.TEXT_DIM + `Usage: ${result.usage.decks_used}/${result.usage.decks_limit} decks` + UI.Style.TEXT_NORMAL)
-      }
+        // Show usage
+        if (result.usage) {
+          UI.println(UI.Style.TEXT_DIM + `Usage: ${result.usage.decks_used}/${result.usage.decks_limit} decks` + UI.Style.TEXT_NORMAL)
+        }
+        if (result.gammaCredits) {
+          UI.println(UI.Style.TEXT_DIM + `Gamma credits: ${result.gammaCredits.remaining} remaining` + UI.Style.TEXT_NORMAL)
+        }
+        UI.println()
 
-      UI.println()
-      UI.println(UI.Style.TEXT_DIM + "File:  " + UI.Style.TEXT_NORMAL + htmlPath)
-      UI.println()
+        // Save URL to local file for reference
+        if (args.output || DECK_DIR) {
+          const deckId = getNextDeckId()
+          const slug = slugify(topic)
+          const outputDir = args.output || path.join(DECK_DIR, `${deckId}-${slug}`)
 
-      // Open in browser and folder
-      if (args.open) {
-        await open(htmlPath)
-        await open(outputDir)
-        UI.println(UI.Style.TEXT_SUCCESS_BOLD + "Opened in browser!" + UI.Style.TEXT_NORMAL)
+          if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true })
+          }
+
+          // Save reference file with URL
+          const infoPath = path.join(outputDir, "deck-info.txt")
+          const info = `Apollo Deck
+===========
+Topic: ${topic}
+Theme: ${theme}
+Title: ${result.title || "N/A"}
+Slides: ${result.slideCount || args.slides}
+Photos: ${result.photosUsed || 0}
+Generated: ${new Date().toISOString()}
+
+Gamma URL:
+${result.gammaUrl}
+
+Note: Your presentation is hosted on Gamma.
+You can edit, share, and export it from the URL above.
+`
+          fs.writeFileSync(infoPath, info)
+          UI.println(UI.Style.TEXT_DIM + "Saved: " + UI.Style.TEXT_NORMAL + infoPath)
+        }
+
+        // Open in browser
+        if (args.open) {
+          await open(result.gammaUrl)
+          UI.println(UI.Style.TEXT_SUCCESS_BOLD + "Opened in browser!" + UI.Style.TEXT_NORMAL)
+        }
+
+      // Handle legacy HTML response (fallback)
+      } else if (result.html) {
+        const deckId = getNextDeckId()
+        const slug = slugify(topic)
+        const outputDir = args.output || path.join(DECK_DIR, `${deckId}-${slug}`)
+
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true })
+        }
+
+        const htmlPath = path.join(outputDir, "deck.html")
+
+        // Show research queries if available
+        if (result.researchQueries && result.researchQueries.length > 0) {
+          for (const query of result.researchQueries) {
+            UI.println(UI.Style.TEXT_DIM + `  Researched: ${query}` + UI.Style.TEXT_NORMAL)
+          }
+          UI.println()
+        }
+
+        // Save HTML file
+        fs.writeFileSync(htmlPath, result.html)
+        UI.println(UI.Style.TEXT_SUCCESS_BOLD + "✓" + UI.Style.TEXT_NORMAL + " Deck generated!")
+
+        // Show usage
+        if (result.usage) {
+          UI.println(UI.Style.TEXT_DIM + `Usage: ${result.usage.decks_used}/${result.usage.decks_limit} decks` + UI.Style.TEXT_NORMAL)
+        }
+
+        UI.println()
+        UI.println(UI.Style.TEXT_DIM + "File:  " + UI.Style.TEXT_NORMAL + htmlPath)
+        UI.println()
+
+        // Open in browser and folder
+        if (args.open) {
+          await open(htmlPath)
+          await open(outputDir)
+          UI.println(UI.Style.TEXT_SUCCESS_BOLD + "Opened in browser!" + UI.Style.TEXT_NORMAL)
+        }
+      } else {
+        UI.error("No presentation generated")
+        process.exit(1)
       }
 
     } catch (error) {
