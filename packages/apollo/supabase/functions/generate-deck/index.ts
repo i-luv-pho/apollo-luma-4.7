@@ -26,7 +26,8 @@ Return a JSON object with this exact structure:
     {
       "headline": "Short punchy headline (max 60 chars)",
       "bullets": ["Point 1", "Point 2", "Point 3"],
-      "imageQuery": "specific search term for stock photo"
+      "imageQuery": "specific search term for stock photo",
+      "speakerNotes": "What the presenter should say for this slide"
     }
   ]
 }
@@ -35,6 +36,10 @@ Return a JSON object with this exact structure:
 1. HEADLINE: Action-oriented, specific, intriguing (max 60 chars)
 2. BULLETS: 3-5 per slide, each max 50 chars, start with verbs
 3. IMAGE QUERY: Specific, visual, will search Pexels (e.g., "startup team celebrating", "rocket launch night sky")
+4. SPEAKER NOTES: 2-4 sentences the presenter should say. Include:
+   - Opening line or question to engage audience
+   - Key point to emphasize
+   - Transition to next slide
 
 # Slide Flow for a Pitch Deck
 1. TITLE - Hook in 5 seconds
@@ -57,6 +62,7 @@ interface SlideContent {
   headline: string
   bullets: string[]
   imageQuery: string
+  speakerNotes: string
 }
 
 interface ContentResponse {
@@ -174,6 +180,11 @@ async function createGammaPresentation(
       slideText += `\n\n![](${photo})`
     }
 
+    // Add speaker notes as HTML comment (Gamma includes these in PPTX export)
+    if (slide.speakerNotes) {
+      slideText += `\n\n<!-- notes: ${slide.speakerNotes} -->`
+    }
+
     inputParts.push(slideText)
   }
 
@@ -233,13 +244,17 @@ interface GammaCompletionResult {
 
 /**
  * Check Gamma generation status and get export URLs
+ * NOTE: Export URL may not be immediately available when status is "completed"
+ * We need to poll a few more times after completion to get the download link
  */
 async function waitForGammaCompletion(
   apiKey: string,
   generationId: string,
-  maxWaitMs: number = 120000
+  maxWaitMs: number = 180000 // 3 minutes total
 ): Promise<GammaCompletionResult> {
   const startTime = Date.now()
+  let exportPollCount = 0
+  const maxExportPolls = 15 // Poll up to 15 more times (45 seconds) for export URL after completion
 
   while (Date.now() - startTime < maxWaitMs) {
     const response = await fetch(`https://public-api.gamma.app/v1.0/generations/${generationId}`, {
@@ -252,6 +267,7 @@ async function waitForGammaCompletion(
     }
 
     const data = await response.json()
+    console.log(`[Gamma] Poll response (exportPollCount=${exportPollCount}): status=${data.status}, downloadLink=${data.downloadLink || 'none'}`)
 
     if (data.status === "completed") {
       // Extract export URLs if available
@@ -284,8 +300,16 @@ async function waitForGammaCompletion(
         result.pdfUrl = data.exports.pdf
       }
 
-      console.log(`[Gamma] Response data: ${JSON.stringify(data)}`)
+      // CRITICAL FIX: Export URL may not be ready immediately after "completed"
+      // According to Gamma docs, we need additional GET requests after completion
+      if (!result.pptxUrl && !result.pdfUrl && exportPollCount < maxExportPolls) {
+        exportPollCount++
+        console.log(`[Gamma] Completed but no export URL yet, polling again (${exportPollCount}/${maxExportPolls})...`)
+        await new Promise(resolve => setTimeout(resolve, 3000)) // Wait 3 seconds
+        continue // Poll again for export URL
+      }
 
+      console.log(`[Gamma] Final result: gammaUrl=${result.gammaUrl}, pptxUrl=${result.pptxUrl || 'none'}`)
       return result
     }
 
@@ -411,7 +435,8 @@ serve(async (req) => {
 
   } catch (e: any) {
     console.error("Error:", e)
-    return new Response(JSON.stringify({ success: false, error: e.message }),
+    const errorMsg = e?.message || String(e) || "Unknown error"
+    return new Response(JSON.stringify({ success: false, error: errorMsg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
   }
 })
