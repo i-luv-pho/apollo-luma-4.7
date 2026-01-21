@@ -335,9 +335,226 @@
 
     .hidden { display: none !important; }
 
+    /* ===== POLISH FEATURES ===== */
+
+    /* Progress Stages */
+    .progress-stages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 0;
+    }
+
+    .progress-stage {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      opacity: 0.4;
+      transition: all 0.4s ease;
+    }
+
+    .progress-stage.active {
+      opacity: 1;
+      color: var(--text);
+    }
+
+    .progress-stage.done {
+      opacity: 0.6;
+    }
+
+    .stage-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .progress-stage.active .stage-icon {
+      background: var(--text);
+      color: white;
+      animation: stagePulse 1.5s ease-in-out infinite;
+    }
+
+    .progress-stage.done .stage-icon {
+      background: rgba(34,197,94,0.1);
+      color: #22c55e;
+    }
+
+    @keyframes stagePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .stage-text {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Usage Display */
+    .usage-info {
+      text-align: center;
+      padding: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+      margin-top: 12px;
+    }
+
+    .usage-info.low {
+      color: #f59e0b;
+    }
+
+    /* Confetti */
+    .confetti-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      animation: confettiFall 3s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* Success Checkmark */
+    .success-check {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      animation: checkPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes checkPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .success-card.animated {
+      animation: cardSlide 0.4s ease-out;
+    }
+
+    @keyframes cardSlide {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Welcome Screen */
+    .welcome-message {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .welcome-message h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .welcome-message p {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .example-prompts {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .example-prompt {
+      padding: 12px 16px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .example-prompt:hover {
+      border-color: var(--text);
+      transform: translateX(4px);
+    }
+
+    /* Micro-interactions */
+    .input-box {
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .input-box:focus-within {
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+    }
+
+    .send-btn {
+      transition: all 0.2s ease;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
+
+    .send-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    .gen-btn {
+      transition: all 0.2s ease;
+    }
+
+    .gen-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .dl-btn {
+      transition: all 0.2s ease;
+    }
+
+    .dl-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .new-btn {
+      transition: all 0.2s ease;
+    }
+
+    .new-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
     @media (max-width: 600px) {
       .container { padding: 0 16px; }
       .msg.user span { max-width: 90%; }
+      .welcome-message { padding: 24px 16px; }
     }
   </style>
 </head>
@@ -448,8 +665,36 @@
     function showApp() {
       modal.classList.add('hidden');
       app.classList.remove('hidden');
-      addApollo("What are you working on?");
+      showWelcome();
       input.focus();
+    }
+
+    function showWelcome() {
+      const div = document.createElement('div');
+      div.className = 'welcome-message';
+      div.innerHTML = `
+        <h2>What are you building?</h2>
+        <p>Describe your idea and I'll create a presentation for you.</p>
+        <div class="example-prompts">
+          <button class="example-prompt" onclick="usePrompt('Startup pitch for a food delivery app targeting college students')">
+            Startup pitch for investors
+          </button>
+          <button class="example-prompt" onclick="usePrompt('Quarterly sales report for the leadership team')">
+            Quarterly business report
+          </button>
+          <button class="example-prompt" onclick="usePrompt('Product launch presentation for a new AI writing tool')">
+            Product launch deck
+          </button>
+        </div>
+      `;
+      chat.appendChild(div);
+    }
+
+    function usePrompt(text) {
+      const welcome = chat.querySelector('.welcome-message');
+      if (welcome) welcome.remove();
+      input.value = text;
+      send();
     }
 
     function showError(msg) {
@@ -505,6 +750,10 @@
     async function send() {
       const text = input.value.trim();
       if (!text) return;
+
+      // Remove welcome message if present
+      const welcome = chat.querySelector('.welcome-message');
+      if (welcome) welcome.remove();
 
       addUser(text);
       input.value = '';
@@ -564,11 +813,71 @@
       addApollo(div);
     }
 
+    // Progress stages
+    const STAGES = [
+      { icon: 'pencil', text: 'Writing content...' },
+      { icon: 'camera', text: 'Finding photos...' },
+      { icon: 'wand-2', text: 'Creating presentation...' },
+      { icon: 'download', text: 'Preparing download...' }
+    ];
+
+    let progressEl = null;
+    let stageTimer = null;
+    let currentStage = 0;
+
+    function showProgress() {
+      const div = document.createElement('div');
+      div.className = 'msg apollo';
+      div.id = 'progress';
+      div.innerHTML = `
+        <div class="progress-stages">
+          ${STAGES.map((s, i) => `
+            <div class="progress-stage ${i === 0 ? 'active' : ''}" data-stage="${i}">
+              <div class="stage-icon">
+                <i data-lucide="${s.icon}" style="width:16px;height:16px"></i>
+              </div>
+              <span class="stage-text">${s.text}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      chat.appendChild(div);
+      lucide.createIcons();
+      chat.scrollTop = chat.scrollHeight;
+      progressEl = div;
+      currentStage = 0;
+
+      stageTimer = setInterval(() => {
+        currentStage++;
+        if (currentStage < STAGES.length) {
+          updateStage(currentStage);
+        }
+      }, 5000);
+    }
+
+    function updateStage(idx) {
+      if (!progressEl) return;
+      const stages = progressEl.querySelectorAll('.progress-stage');
+      stages.forEach((s, i) => {
+        s.classList.remove('active', 'done');
+        if (i < idx) s.classList.add('done');
+        if (i === idx) s.classList.add('active');
+      });
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function hideProgress() {
+      if (stageTimer) clearInterval(stageTimer);
+      stageTimer = null;
+      if (progressEl) progressEl.remove();
+      progressEl = null;
+    }
+
     async function generate() {
       if (!summary) return;
 
       document.querySelectorAll('.gen-btn').forEach(b => b.disabled = true);
-      showThinking();
+      showProgress();
 
       try {
         const context = conversation.map(m =>
@@ -589,7 +898,7 @@
         });
 
         const data = await res.json();
-        hideThinking();
+        hideProgress();
 
         if (!data.success) throw new Error(data.error);
 
@@ -604,27 +913,65 @@
         }
 
       } catch (err) {
-        hideThinking();
+        hideProgress();
         addApollo(`Failed: ${err.message}. <button class="gen-btn" style="margin-top:12px" onclick="generate()">Try again</button>`);
       }
     }
 
+    function showConfetti() {
+      const container = document.createElement('div');
+      container.className = 'confetti-container';
+      document.body.appendChild(container);
+
+      const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+        confetti.style.width = (6 + Math.random() * 8) + 'px';
+        confetti.style.height = (6 + Math.random() * 8) + 'px';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        container.appendChild(confetti);
+      }
+      setTimeout(() => container.remove(), 4000);
+    }
+
     function showSuccess(data) {
+      showConfetti();
+
+      const remaining = data.usage ? (data.usage.decks_limit - data.usage.decks_used) : null;
+      const isLow = remaining !== null && remaining <= 3;
+
       const div = document.createElement('div');
       div.innerHTML = `
-        <div class="success-card">
-          <h3>${escape(data.title || 'Your presentation')}</h3>
-          <p>${data.slideCount || ''} slides · ${data.photosUsed || 0} photos</p>
+        <div class="success-card animated">
+          <div class="success-check">
+            <i data-lucide="check" style="width:24px;height:24px;color:white"></i>
+          </div>
+          <h3 style="text-align:center">${escape(data.title || 'Your presentation is ready!')}</h3>
+          <p style="text-align:center">${data.slideCount || ''} slides · ${data.photosUsed || 0} photos</p>
           <div class="success-btns">
             ${data.pptxUrl ? `<button class="dl-btn primary" onclick="window.open('${data.pptxUrl}')">
-              <i data-lucide="file-text" style="width:18px;height:18px"></i>
-              Open your file
+              <i data-lucide="download" style="width:18px;height:18px"></i>
+              Download PowerPoint
             </button>` : ''}
             ${data.pdfUrl ? `<button class="dl-btn secondary" onclick="window.open('${data.pdfUrl}')">
               <i data-lucide="file-text" style="width:18px;height:18px"></i>
               Download PDF
             </button>` : ''}
+            ${data.gammaUrl ? `<button class="dl-btn secondary" onclick="window.open('${data.gammaUrl}')">
+              <i data-lucide="external-link" style="width:18px;height:18px"></i>
+              Edit in Gamma
+            </button>` : ''}
           </div>
+          ${remaining !== null ? `
+            <div class="usage-info ${isLow ? 'low' : ''}">
+              ${remaining} presentation${remaining !== 1 ? 's' : ''} remaining
+            </div>
+          ` : ''}
         </div>
         <button class="gen-btn" style="background:white;color:var(--text);border:1px solid var(--border)" onclick="reset()">
           <i data-lucide="plus" style="width:16px;height:16px"></i>
@@ -638,7 +985,7 @@
       chat.innerHTML = '';
       conversation = [];
       summary = null;
-      addApollo("What are you working on?");
+      showWelcome();
       input.focus();
     }
 
