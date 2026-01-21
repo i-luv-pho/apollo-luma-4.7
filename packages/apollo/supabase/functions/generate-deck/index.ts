@@ -201,6 +201,7 @@ async function createGammaPresentation(
       numCards: slides.length + 1, // +1 for title slide
       cardSplit: "inputTextBreaks", // Respect our \n---\n markers
       additionalInstructions: styleInstructions,
+      exportAs: "pptx", // Export as PowerPoint for download
       textOptions: {
         amount: "medium"
       },
@@ -221,14 +222,21 @@ async function createGammaPresentation(
   return response.json()
 }
 
+interface GammaCompletionResult {
+  gammaUrl: string
+  credits: { deducted: number; remaining: number }
+  pptxUrl?: string
+  pdfUrl?: string
+}
+
 /**
- * Check Gamma generation status
+ * Check Gamma generation status and get export URLs
  */
 async function waitForGammaCompletion(
   apiKey: string,
   generationId: string,
   maxWaitMs: number = 120000
-): Promise<{ gammaUrl: string; credits: { deducted: number; remaining: number } }> {
+): Promise<GammaCompletionResult> {
   const startTime = Date.now()
 
   while (Date.now() - startTime < maxWaitMs) {
@@ -244,7 +252,26 @@ async function waitForGammaCompletion(
     const data = await response.json()
 
     if (data.status === "completed") {
-      return { gammaUrl: data.gammaUrl, credits: data.credits }
+      // Extract export URLs if available
+      const result: GammaCompletionResult = {
+        gammaUrl: data.gammaUrl,
+        credits: data.credits
+      }
+
+      // Gamma returns exportUrl when exportAs is specified
+      if (data.exportUrl) {
+        result.pptxUrl = data.exportUrl
+      }
+
+      // Also check for exports object with multiple formats
+      if (data.exports?.pptx) {
+        result.pptxUrl = data.exports.pptx
+      }
+      if (data.exports?.pdf) {
+        result.pdfUrl = data.exports.pdf
+      }
+
+      return result
     }
 
     if (data.status === "failed") {
@@ -353,8 +380,10 @@ serve(async (req) => {
     console.log(`[Stage 3] Generation started: ${generationId}`)
 
     // Wait for completion
-    const { gammaUrl, credits } = await waitForGammaCompletion(gammaKey, generationId)
+    const { gammaUrl, credits, pptxUrl, pdfUrl } = await waitForGammaCompletion(gammaKey, generationId)
     console.log(`[Stage 3] Presentation ready: ${gammaUrl}`)
+    if (pptxUrl) console.log(`[Stage 3] PPTX export: ${pptxUrl}`)
+    if (pdfUrl) console.log(`[Stage 3] PDF export: ${pdfUrl}`)
 
     // Increment usage
     await supabase.rpc("increment_user_deck_usage", { user_id: user.id })
@@ -362,6 +391,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       gammaUrl,
+      pptxUrl,
+      pdfUrl,
       title: content.title,
       slideCount: content.slides.length + 1, // +1 for title slide
       photosUsed: photosFound,

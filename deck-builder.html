@@ -1161,10 +1161,33 @@
     }
 
     function showGammaSuccess(data) {
+      // Store URLs for download buttons
+      deckData.pptxUrl = data.pptxUrl;
+      deckData.pdfUrl = data.pdfUrl;
+
+      // Build download buttons HTML
+      let downloadButtons = '';
+      if (data.pptxUrl) {
+        downloadButtons += `
+          <button class="action-btn secondary" onclick="downloadFile('${data.pptxUrl}', 'pptx')">
+            <i data-lucide="file-presentation" style="width: 16px; height: 16px;"></i>
+            PPTX
+          </button>
+        `;
+      }
+      if (data.pdfUrl) {
+        downloadButtons += `
+          <button class="action-btn secondary" onclick="downloadFile('${data.pdfUrl}', 'pdf')">
+            <i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
+            PDF
+          </button>
+        `;
+      }
+
       const content = document.createElement('div');
       content.innerHTML = `
         <div style="margin-bottom: 16px;">
-          <strong>${data.title || 'Your presentation'}</strong> is ready!
+          <strong>${escapeHtml(data.title || 'Your presentation')}</strong> is ready!
         </div>
         <div style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px;">
           ${data.slideCount || ''} slides · ${data.photosUsed || 0} photos from Pexels
@@ -1174,6 +1197,7 @@
             <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
             New
           </button>
+          ${downloadButtons}
           <button class="action-btn primary" onclick="window.open('${data.gammaUrl}', '_blank')">
             <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
             Open in Gamma
@@ -1183,6 +1207,11 @@
       addMessage(content);
       setTimeout(() => lucide.createIcons(), 50);
       currentStep = 'done';
+    }
+
+    function downloadFile(url, format) {
+      // Open in new tab - browser will handle download
+      window.open(url, '_blank');
     }
 
     function showPreview(html) {
