@@ -1119,13 +1119,25 @@
         const data = await res.json();
         hideThinking();
 
-        if (!data.success || !data.html) {
+        if (!data.success) {
           throw new Error(data.error || 'Generation failed');
         }
 
-        deckData.generatedHtml = data.html;
-        openInNewTab(data.html);
-        showPreview(data.html);
+        // Handle Gamma URL response (new flow)
+        if (data.gammaUrl) {
+          deckData.gammaUrl = data.gammaUrl;
+          deckData.title = data.title;
+          window.open(data.gammaUrl, '_blank');
+          showGammaSuccess(data);
+        }
+        // Handle legacy HTML response (fallback)
+        else if (data.html) {
+          deckData.generatedHtml = data.html;
+          openInNewTab(data.html);
+          showPreview(data.html);
+        } else {
+          throw new Error('No presentation generated');
+        }
 
       } catch (err) {
         hideThinking();
@@ -1146,6 +1158,31 @@
         addMessage(errContent);
         inputArea.classList.remove('hidden');
       }
+    }
+
+    function showGammaSuccess(data) {
+      const content = document.createElement('div');
+      content.innerHTML = `
+        <div style="margin-bottom: 16px;">
+          <strong>${data.title || 'Your presentation'}</strong> is ready!
+        </div>
+        <div style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px;">
+          ${data.slideCount || ''} slides · ${data.photosUsed || 0} photos from Pexels
+        </div>
+        <div class="preview-actions">
+          <button class="action-btn secondary" onclick="resetConversation()">
+            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            New
+          </button>
+          <button class="action-btn primary" onclick="window.open('${data.gammaUrl}', '_blank')">
+            <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
+            Open in Gamma
+          </button>
+        </div>
+      `;
+      addMessage(content);
+      setTimeout(() => lucide.createIcons(), 50);
+      currentStep = 'done';
     }
 
     function showPreview(html) {
