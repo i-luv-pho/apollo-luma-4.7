@@ -48,20 +48,6 @@
       font-family: 'Fraunces', serif;
       font-size: 18px;
       font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .beta-badge {
-      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      font-size: 10px;
-      font-weight: 500;
-      padding: 2px 6px;
-      background: #fef3c7;
-      color: #92400e;
-      border-radius: 4px;
-      text-transform: lowercase;
     }
 
     .new-btn {
@@ -263,6 +249,7 @@
       flex: 1;
       border: none;
       outline: none;
+      background: transparent;
       font-size: 15px;
       font-family: inherit;
       resize: none;
@@ -637,7 +624,7 @@
   <!-- Main App -->
   <div class="container hidden" id="app">
     <header>
-      <div class="logo">Apollo <span class="beta-badge">beta</span></div>
+      <div class="logo">Apollo</div>
       <button class="new-btn" onclick="reset()">
         <i data-lucide="plus" style="width:14px;height:14px"></i>
         New
@@ -660,6 +647,7 @@
     lucide.createIcons();
 
     const API_BASE = 'https://advpygqokfxmomlumkgl.supabase.co/functions/v1';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg';
 
     let accessKey = localStorage.getItem('apollo_key') || '';
     let conversation = [];
@@ -715,6 +703,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'x-access-key': key
           },
           body: JSON.stringify({ messages: [{ role: 'user', content: 'hi' }] })
@@ -734,6 +723,9 @@
     }
 
     function showWelcome() {
+      // Prevent duplicate welcome screens
+      if (chat.querySelector('.welcome-message')) return;
+
       const div = document.createElement('div');
       div.className = 'welcome-message';
       div.innerHTML = `
@@ -891,6 +883,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'x-access-key': accessKey
           },
           body: JSON.stringify({ messages: conversation })
@@ -1102,6 +1095,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'x-access-key': accessKey
           },
           body: JSON.stringify({
