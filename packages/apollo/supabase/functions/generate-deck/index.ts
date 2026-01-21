@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Headers": "x-access-key, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
@@ -179,14 +179,16 @@ async function createGammaPresentation(
 
   const inputText = inputParts.join("\n\n---\n\n")
 
-  // Style instructions for Gamma
-  const styleInstructions = `IMPORTANT DESIGN RULES:
-- Use a LIGHT background (white or very light gray)
-- NO gradients
-- NO dark backgrounds
-- Clean, minimal design
-- Professional spacing
-- Simple and readable`
+  // Style instructions for Gamma (optimized for PPTX export to Canva/Google Slides)
+  const styleInstructions = `CRITICAL DESIGN RULES FOR EXPORT COMPATIBILITY:
+- Use SOLID WHITE background (#FFFFFF) - no patterns, no overlays
+- NO gradients anywhere - not on backgrounds, not on shapes
+- NO background images or textures
+- NO layered background elements
+- Keep all elements simple and flat
+- Use solid color shapes only
+- Clean, minimal design with lots of white space
+- Text must be on solid backgrounds for easy editing`
 
   const response = await fetch("https://public-api.gamma.app/v1.0/generations", {
     method: "POST",
@@ -302,52 +304,43 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders })
 
   try {
-    // Get JWT token from Authorization header
-    const authHeader = req.headers.get("authorization")
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ success: false, error: "Authentication required" }),
+    // Get access key from header
+    const accessKey = req.headers.get("x-access-key")
+    if (!accessKey) {
+      return new Response(JSON.stringify({ success: false, error: "Access key required" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
-    const token = authHeader.replace("Bearer ", "")
-
-    // Create Supabase client with user's token to get their identity
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    )
-
-    // Get user from token
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
-    if (userError || !user) {
-      return new Response(JSON.stringify({ success: false, error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
-    }
-
-    // Use service role for database operations
+    // Create Supabase client with service role
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     )
 
-    // Check user account status
-    const { data: account, error: accountError } = await supabase
-      .from("user_accounts")
+    // Validate access key
+    const { data: keyData, error: keyError } = await supabase
+      .from("deck_api_keys")
       .select("*")
-      .eq("id", user.id)
+      .eq("key", accessKey)
       .single()
 
-    if (accountError || !account) {
-      return new Response(JSON.stringify({ success: false, error: "Account not found" }),
+    if (keyError || !keyData) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid access key" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
-    if (!account.activated) {
-      return new Response(JSON.stringify({ success: false, error: "Account pending approval" }),
+
+    if (!keyData.active) {
+      return new Response(JSON.stringify({ success: false, error: "Access key disabled" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
-    if (account.decks_used >= account.decks_limit) {
-      return new Response(JSON.stringify({ success: false, error: `Limit reached (${account.decks_used}/${account.decks_limit})` }),
+
+    if (keyData.expires_at && new Date(keyData.expires_at) < new Date()) {
+      return new Response(JSON.stringify({ success: false, error: "Access key expired" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    if (keyData.decks_used >= keyData.decks_limit) {
+      return new Response(JSON.stringify({ success: false, error: `Limit reached (${keyData.decks_used}/${keyData.decks_limit})` }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
@@ -398,8 +391,11 @@ serve(async (req) => {
     if (pptxUrl) console.log(`[Stage 3] PPTX export: ${pptxUrl}`)
     if (pdfUrl) console.log(`[Stage 3] PDF export: ${pdfUrl}`)
 
-    // Increment usage
-    await supabase.rpc("increment_user_deck_usage", { user_id: user.id })
+    // Increment usage on the access key
+    await supabase
+      .from("deck_api_keys")
+      .update({ decks_used: keyData.decks_used + 1 })
+      .eq("id", keyData.id)
 
     return new Response(JSON.stringify({
       success: true,
@@ -410,7 +406,7 @@ serve(async (req) => {
       slideCount: content.slides.length + 1, // +1 for title slide
       photosUsed: photosFound,
       gammaCredits: credits,
-      usage: { decks_used: account.decks_used + 1, decks_limit: account.decks_limit }
+      usage: { decks_used: keyData.decks_used + 1, decks_limit: keyData.decks_limit }
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } })
 
   } catch (e: any) {
