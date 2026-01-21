@@ -6,6 +6,7 @@
   <title>Apollo</title>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg: #fafafa;
@@ -611,6 +612,97 @@
       color: var(--text);
     }
 
+    /* Auth toggle */
+    .auth-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .auth-toggle button {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms;
+    }
+
+    .auth-toggle button.active {
+      background: var(--text);
+      border-color: var(--text);
+      color: white;
+    }
+
+    .auth-error {
+      color: #dc2626;
+      font-size: 13px;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      background: rgba(220, 38, 38, 0.08);
+      border-radius: 8px;
+      display: none;
+    }
+
+    .auth-error.show {
+      display: block;
+    }
+
+    /* Pending screen */
+    .pending-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      padding: 32px;
+    }
+
+    .pending-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .pending-screen h2 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .pending-screen p {
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      max-width: 320px;
+    }
+
+    .logout-btn {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 150ms;
+    }
+
+    .logout-btn:hover {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
     /* Utility */
     .hidden {
       display: none !important;
@@ -641,15 +733,34 @@
   </style>
 </head>
 <body>
-  <!-- Access Key Modal -->
-  <div class="modal-overlay" id="keyModal">
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="authModal">
     <div class="modal">
       <h2>Apollo</h2>
-      <p>Enter your access key to get started.</p>
-      <input type="password" class="modal-input" id="accessKeyInput" placeholder="sk_xxxxx" />
-      <button class="modal-btn" id="saveKeyBtn" disabled>Continue</button>
-      <a href="https://apollo.app/keys" target="_blank" class="modal-link">Get an access key</a>
+      <p>Create an account to get started.</p>
+
+      <div class="auth-toggle">
+        <button id="signupTab" class="active">Sign Up</button>
+        <button id="loginTab">Log In</button>
+      </div>
+
+      <div class="auth-error" id="authError"></div>
+
+      <input type="email" class="modal-input" id="emailInput" placeholder="Email" />
+      <input type="password" class="modal-input" id="passwordInput" placeholder="Password" />
+
+      <button class="modal-btn" id="authBtn">Create Account</button>
     </div>
+  </div>
+
+  <!-- Pending Approval Screen -->
+  <div class="pending-screen hidden" id="pendingScreen">
+    <div class="pending-icon">
+      <i data-lucide="clock" style="width: 28px; height: 28px; color: var(--text-muted);"></i>
+    </div>
+    <h2>Account Pending</h2>
+    <p>Your account is awaiting approval. Contact the admin to activate your access.</p>
+    <button class="logout-btn" onclick="logout()">Log Out</button>
   </div>
 
   <!-- Main App -->
@@ -686,36 +797,154 @@
       return div.innerHTML;
     }
 
-    let accessKey = sessionStorage.getItem('apollo_access_key') || '';
+    // Supabase setup
+    const SUPABASE_URL = 'https://advpygqokfxmomlumkgl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const API_URL = SUPABASE_URL + '/functions/v1/generate-deck';
+
+    let currentUser = null;
     let currentStep = 'welcome';
     let deckData = { topic: '', slides: 7, generatedHtml: null };
+    let isSignupMode = true;
 
+    // DOM elements
     const chatContainer = document.getElementById('chatContainer');
     const inputArea = document.getElementById('inputArea');
     const userInput = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
-    const keyModal = document.getElementById('keyModal');
-    const accessKeyInput = document.getElementById('accessKeyInput');
-    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const authModal = document.getElementById('authModal');
+    const pendingScreen = document.getElementById('pendingScreen');
+    const appContainer = document.querySelector('.app-container');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const authBtn = document.getElementById('authBtn');
+    const authError = document.getElementById('authError');
+    const signupTab = document.getElementById('signupTab');
+    const loginTab = document.getElementById('loginTab');
 
-    const API_URL = 'https://advpygqokfxmomlumkgl.supabase.co/functions/v1/generate-deck';
-    const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg';
+    // Auth tab toggle
+    signupTab.addEventListener('click', () => {
+      isSignupMode = true;
+      signupTab.classList.add('active');
+      loginTab.classList.remove('active');
+      authBtn.textContent = 'Create Account';
+    });
 
-    if (accessKey) {
-      keyModal.classList.add('hidden');
+    loginTab.addEventListener('click', () => {
+      isSignupMode = false;
+      loginTab.classList.add('active');
+      signupTab.classList.remove('active');
+      authBtn.textContent = 'Log In';
+    });
+
+    // Auth button
+    authBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+        showAuthError('Please enter email and password');
+        return;
+      }
+
+      if (password.length < 6) {
+        showAuthError('Password must be at least 6 characters');
+        return;
+      }
+
+      authBtn.disabled = true;
+      authBtn.textContent = isSignupMode ? 'Creating...' : 'Logging in...';
+      hideAuthError();
+
+      try {
+        if (isSignupMode) {
+          const { data, error } = await supabase.auth.signUp({ email, password });
+          if (error) throw error;
+          currentUser = data.user;
+        } else {
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          currentUser = data.user;
+        }
+
+        await checkUserAndProceed();
+      } catch (err) {
+        showAuthError(err.message);
+        authBtn.disabled = false;
+        authBtn.textContent = isSignupMode ? 'Create Account' : 'Log In';
+      }
+    });
+
+    function showAuthError(msg) {
+      authError.textContent = msg;
+      authError.classList.add('show');
+    }
+
+    function hideAuthError() {
+      authError.classList.remove('show');
+    }
+
+    async function checkUserAndProceed() {
+      // Check if user is activated
+      const { data: account, error } = await supabase
+        .from('user_accounts')
+        .select('activated, decks_used, decks_limit')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (error || !account) {
+        // Account row might not exist yet (trigger delay), show pending
+        showPendingScreen();
+        return;
+      }
+
+      if (!account.activated) {
+        showPendingScreen();
+        return;
+      }
+
+      // User is activated, show app
+      authModal.classList.add('hidden');
+      pendingScreen.classList.add('hidden');
+      appContainer.classList.remove('hidden');
       startConversation();
     }
 
-    accessKeyInput.addEventListener('input', () => {
-      saveKeyBtn.disabled = accessKeyInput.value.trim().length < 5;
-    });
+    function showPendingScreen() {
+      authModal.classList.add('hidden');
+      pendingScreen.classList.remove('hidden');
+      appContainer.classList.add('hidden');
+      lucide.createIcons();
+    }
 
-    saveKeyBtn.addEventListener('click', () => {
-      accessKey = accessKeyInput.value.trim();
-      sessionStorage.setItem('apollo_access_key', accessKey);
-      keyModal.classList.add('hidden');
-      startConversation();
-    });
+    async function logout() {
+      await supabase.auth.signOut();
+      currentUser = null;
+      pendingScreen.classList.add('hidden');
+      appContainer.classList.add('hidden');
+      authModal.classList.remove('hidden');
+      emailInput.value = '';
+      passwordInput.value = '';
+      authBtn.disabled = false;
+      authBtn.textContent = 'Create Account';
+    }
+
+    // Check session on load
+    async function init() {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session) {
+        currentUser = session.user;
+        await checkUserAndProceed();
+      } else {
+        authModal.classList.remove('hidden');
+        appContainer.classList.add('hidden');
+      }
+    }
+
+    init();
 
     function addMessage(content, isUser = false) {
       const msg = document.createElement('div');
@@ -867,12 +1096,17 @@
       inputArea.classList.add('hidden');
 
       try {
+        // Get current session token
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('Not authenticated');
+        }
+
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`,
-            'x-access-key': accessKey
+            'Authorization': `Bearer ${session.access_token}`
           },
           body: JSON.stringify({
             topic: deckData.topic,

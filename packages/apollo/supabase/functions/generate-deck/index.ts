@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-access-key, content-type",
+  "Access-Control-Allow-Headers": "authorization, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
@@ -262,34 +262,52 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders })
 
   try {
-    // Validate access key
-    const accessKey = req.headers.get("x-access-key")
-    if (!accessKey) {
-      return new Response(JSON.stringify({ success: false, error: "Access key required" }),
+    // Get JWT token from Authorization header
+    const authHeader = req.headers.get("authorization")
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ success: false, error: "Authentication required" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
+    const token = authHeader.replace("Bearer ", "")
+
+    // Create Supabase client with user's token to get their identity
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    )
+
+    // Get user from token
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
+    if (userError || !user) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    }
+
+    // Use service role for database operations
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     )
 
-    const { data: keyData, error } = await supabase
-      .from("deck_api_keys")
+    // Check user account status
+    const { data: account, error: accountError } = await supabase
+      .from("user_accounts")
       .select("*")
-      .eq("key", accessKey)
+      .eq("id", user.id)
       .single()
 
-    if (error || !keyData) {
-      return new Response(JSON.stringify({ success: false, error: "Invalid access key" }),
+    if (accountError || !account) {
+      return new Response(JSON.stringify({ success: false, error: "Account not found" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
-    if (!keyData.active) {
-      return new Response(JSON.stringify({ success: false, error: "Key disabled" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    if (!account.activated) {
+      return new Response(JSON.stringify({ success: false, error: "Account pending approval" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
-    if (keyData.decks_used >= keyData.decks_limit) {
-      return new Response(JSON.stringify({ success: false, error: `Limit reached (${keyData.decks_used}/${keyData.decks_limit})` }),
+    if (account.decks_used >= account.decks_limit) {
+      return new Response(JSON.stringify({ success: false, error: `Limit reached (${account.decks_used}/${account.decks_limit})` }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } })
     }
 
@@ -339,7 +357,7 @@ serve(async (req) => {
     console.log(`[Stage 3] Presentation ready: ${gammaUrl}`)
 
     // Increment usage
-    await supabase.rpc("increment_deck_usage", { access_key: accessKey })
+    await supabase.rpc("increment_user_deck_usage", { user_id: user.id })
 
     return new Response(JSON.stringify({
       success: true,
@@ -348,7 +366,7 @@ serve(async (req) => {
       slideCount: content.slides.length + 1, // +1 for title slide
       photosUsed: photosFound,
       gammaCredits: credits,
-      usage: { decks_used: keyData.decks_used + 1, decks_limit: keyData.decks_limit }
+      usage: { decks_used: account.decks_used + 1, decks_limit: account.decks_limit }
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } })
 
   } catch (e: any) {
