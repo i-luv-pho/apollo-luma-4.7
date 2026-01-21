@@ -190,7 +190,7 @@ async function createGammaPresentation(
 - Accent/highlights: ${colors.accent}
 Use clean, minimal design. Professional spacing. No decorative elements.`
 
-  const response = await fetch("https://public-api.gamma.app/v1.0/generate", {
+  const response = await fetch("https://public-api.gamma.app/v1.0/generations", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -234,7 +234,7 @@ async function waitForGammaCompletion(
   const startTime = Date.now()
 
   while (Date.now() - startTime < maxWaitMs) {
-    const response = await fetch(`https://public-api.gamma.app/v1.0/generate/${generationId}`, {
+    const response = await fetch(`https://public-api.gamma.app/v1.0/generations/${generationId}`, {
       headers: { "X-API-KEY": apiKey }
     })
 
