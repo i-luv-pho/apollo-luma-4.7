@@ -15,8 +15,8 @@ const DECK_DIR = path.join(os.homedir(), "Apollo", "decks")
 const APOLLO_API_URL = "https://advpygqokfxmomlumkgl.supabase.co/functions/v1/generate-deck"
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg"
 
-// Available themes
-const THEMES = ["pure-white", "warm-white", "light-gray", "charcoal", "dark-forest"] as const
+// Available themes (light mode only)
+const THEMES = ["pure-white", "warm-white", "light-gray"] as const
 type Theme = typeof THEMES[number]
 
 function getNextDeckId(): string {
@@ -122,7 +122,7 @@ export const DeckCommand = cmd({
       .option("theme", {
         type: "string",
         default: "pure-white",
-        describe: "Color theme (pure-white, warm-white, light-gray, charcoal, dark-forest)",
+        describe: "Color theme (pure-white, warm-white, light-gray)",
         choices: THEMES,
       })
       .option("open", {

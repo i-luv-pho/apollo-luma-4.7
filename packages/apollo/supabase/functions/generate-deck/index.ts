@@ -7,13 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-// Apollo color themes
+// Apollo color themes (light mode only)
 const THEMES = {
   "pure-white": { bg: "#FFFFFF", headline: "#0d2137", text: "#374151", accent: "#2563eb" },
   "warm-white": { bg: "#FAFAF8", headline: "#1a1814", text: "#44403c", accent: "#b45309" },
   "light-gray": { bg: "#F2F2F2", headline: "#1a1a1a", text: "#525252", accent: "#0891b2" },
-  "charcoal": { bg: "#1a1a1a", headline: "#ffffff", text: "#d4d4d4", accent: "#f59e0b" },
-  "dark-forest": { bg: "#0f1f1a", headline: "#e8fff4", text: "#a7f3d0", accent: "#10b981" },
 }
 
 const CONTENT_PROMPT = `You are Apollo, an AI that creates world-class presentation content.
@@ -181,14 +179,14 @@ async function createGammaPresentation(
 
   const inputText = inputParts.join("\n\n---\n\n")
 
-  // Get theme colors for additionalInstructions
-  const colors = THEMES[theme]
-  const styleInstructions = `Use these exact colors:
-- Background: ${colors.bg}
-- Headlines: ${colors.headline}
-- Body text: ${colors.text}
-- Accent/highlights: ${colors.accent}
-Use clean, minimal design. Professional spacing. No decorative elements.`
+  // Style instructions for Gamma
+  const styleInstructions = `IMPORTANT DESIGN RULES:
+- Use a LIGHT background (white or very light gray)
+- NO gradients
+- NO dark backgrounds
+- Clean, minimal design
+- Professional spacing
+- Simple and readable`
 
   const response = await fetch("https://public-api.gamma.app/v1.0/generations", {
     method: "POST",
