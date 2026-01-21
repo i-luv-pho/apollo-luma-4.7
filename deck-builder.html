@@ -485,6 +485,82 @@
       transform: scale(0.98);
     }
 
+    /* Download Buttons */
+    .download-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .download-btn {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--surface-solid);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 200ms var(--ease-spring);
+      text-align: left;
+    }
+
+    .download-btn:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .download-btn:active {
+      transform: scale(0.98);
+    }
+
+    .download-btn-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .download-btn-text {
+      flex: 1;
+    }
+
+    .download-btn-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .download-btn-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .download-btn.primary {
+      background: var(--text);
+      border-color: var(--text);
+    }
+
+    .download-btn.primary .download-btn-icon {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+
+    .download-btn.primary .download-btn-title {
+      color: white;
+    }
+
+    .download-btn.primary .download-btn-subtitle {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
     /* Modal */
     .modal-overlay {
       position: fixed;
@@ -803,10 +879,12 @@
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const API_URL = SUPABASE_URL + '/functions/v1/generate-deck';
+    const CHAT_URL = SUPABASE_URL + '/functions/v1/chat-with-apollo';
 
     let currentUser = null;
-    let currentStep = 'welcome';
-    let deckData = { topic: '', slides: 7, generatedHtml: null };
+    let conversationHistory = [];
+    let deckSummary = null;
+    let isReadyToGenerate = false;
     let isSignupMode = true;
 
     // DOM elements
@@ -993,74 +1071,63 @@
 
     function startConversation() {
       setTimeout(() => {
-        const content = document.createElement('div');
-        content.innerHTML = `
-          <div>What would you like to create today?</div>
-          <div class="options-grid">
-            <div class="option-card" onclick="selectType('startup pitch')">
-              <div class="option-icon"><i data-lucide="rocket" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Startup Pitch</span>
-            </div>
-            <div class="option-card" onclick="selectType('strategy plan')">
-              <div class="option-icon"><i data-lucide="briefcase" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Strategy Plan</span>
-            </div>
-            <div class="option-card" onclick="selectType('market analysis')">
-              <div class="option-icon"><i data-lucide="bar-chart-2" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Market Analysis</span>
-            </div>
-            <div class="option-card" onclick="selectType('quarterly review')">
-              <div class="option-icon"><i data-lucide="presentation" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Quarterly Review</span>
-            </div>
-            <div class="option-card" onclick="selectType('team update')">
-              <div class="option-icon"><i data-lucide="users" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Team Update</span>
-            </div>
-            <div class="option-card" onclick="selectType('project proposal')">
-              <div class="option-icon"><i data-lucide="lightbulb" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Project Proposal</span>
-            </div>
-            <div class="option-card" onclick="selectType('competitive analysis')">
-              <div class="option-icon"><i data-lucide="target" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Competitive Analysis</span>
-            </div>
-            <div class="option-card" onclick="selectType('training deck')">
-              <div class="option-icon"><i data-lucide="graduation-cap" style="width: 18px; height: 18px;"></i></div>
-              <span class="option-text">Training Deck</span>
-            </div>
-          </div>
-        `;
-        addMessage(content);
-        currentStep = 'topic';
+        addMessage("What are you working on?");
       }, 200);
     }
 
-    function selectType(type) {
-      addMessage(type, true);
-      setTimeout(() => {
-        addMessage("Tell me about your idea.");
-        currentStep = 'details';
-      }, 300);
+    async function sendToApollo(userText) {
+      // Add user message to history
+      conversationHistory.push({ role: "user", content: userText });
+
+      showThinking();
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+
+        const res = await fetch(CHAT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ messages: conversationHistory })
+        });
+
+        const data = await res.json();
+        hideThinking();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to get response');
+        }
+
+        // Add Apollo's response to history
+        conversationHistory.push({ role: "assistant", content: data.message });
+
+        if (data.ready) {
+          // Apollo has enough info - show message with generate button
+          isReadyToGenerate = true;
+          deckSummary = data.summary;
+          showReadyToGenerate(data.message, data.summary);
+        } else {
+          // Apollo needs more info - just show the question
+          addMessage(data.message);
+        }
+
+      } catch (err) {
+        hideThinking();
+        addMessage(`Something went wrong: ${err.message}`);
+      }
     }
 
-    function askSlideCount() {
+    function showReadyToGenerate(message, summary) {
       const content = document.createElement('div');
       content.innerHTML = `
-        <div>How long should this be?</div>
-        <div class="slider-section">
-          <div class="slider-label">Number of slides</div>
-          <div class="slider-wrapper">
-            <input type="range" class="slider-input" id="slideSlider" min="3" max="15" value="7">
-            <div class="slider-track">
-              <div class="slider-fill" id="sliderFill" style="width: 33.33%"></div>
-              <div class="slider-thumb" id="sliderThumb" style="left: 33.33%"></div>
-            </div>
-          </div>
-          <div class="slider-value-display">
-            <span class="slider-number" id="slideNum">7</span>
-            <span class="slider-unit">slides</span>
-          </div>
+        <div style="margin-bottom: 20px;">${escapeHtml(message)}</div>
+        <div style="margin-bottom: 20px; padding: 16px; background: rgba(0,0,0,0.03); border-radius: 12px; font-size: 14px; color: var(--text-secondary);">
+          <div><strong>Topic:</strong> ${escapeHtml(summary.topic)}</div>
+          <div><strong>Audience:</strong> ${escapeHtml(summary.audience)}</div>
+          <div><strong>Slides:</strong> ${summary.slides}</div>
         </div>
         <button class="generate-btn" onclick="generateDeck()">
           <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
@@ -1068,30 +1135,15 @@
         </button>
       `;
       addMessage(content);
-
-      setTimeout(() => {
-        const slider = document.getElementById('slideSlider');
-        const fill = document.getElementById('sliderFill');
-        const thumb = document.getElementById('sliderThumb');
-        const num = document.getElementById('slideNum');
-
-        slider.addEventListener('input', () => {
-          const val = slider.value;
-          const pct = ((val - 3) / 12) * 100;
-          fill.style.width = pct + '%';
-          thumb.style.left = pct + '%';
-          num.textContent = val;
-          deckData.slides = parseInt(val);
-        });
-
-        lucide.createIcons();
-      }, 50);
-
-      currentStep = 'slides';
+      lucide.createIcons();
     }
 
     async function generateDeck() {
-      addMessage(`${deckData.slides} slides`, true);
+      if (!deckSummary) {
+        addMessage("I don't have enough information yet. Tell me more about what you need.");
+        return;
+      }
+
       showThinking();
       inputArea.classList.add('hidden');
 
@@ -1102,6 +1154,11 @@
           throw new Error('Not authenticated');
         }
 
+        // Build rich context from conversation
+        const conversationContext = conversationHistory
+          .map(m => `${m.role === 'user' ? 'User' : 'Apollo'}: ${m.content}`)
+          .join('\n');
+
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: {
@@ -1109,9 +1166,9 @@
             'Authorization': `Bearer ${session.access_token}`
           },
           body: JSON.stringify({
-            topic: deckData.topic,
-            slides: deckData.slides,
-            documentContext: '',
+            topic: `${deckSummary.topic} for ${deckSummary.audience}. Goal: ${deckSummary.goal}. Key points: ${(deckSummary.keyPoints || []).join(', ')}`,
+            slides: deckSummary.slides,
+            documentContext: conversationContext,
             assets: []
           })
         });
@@ -1125,14 +1182,13 @@
 
         // Handle Gamma URL response (new flow)
         if (data.gammaUrl) {
-          deckData.gammaUrl = data.gammaUrl;
-          deckData.title = data.title;
+          generatedUrls.gammaUrl = data.gammaUrl;
           window.open(data.gammaUrl, '_blank');
           showGammaSuccess(data);
         }
         // Handle legacy HTML response (fallback)
         else if (data.html) {
-          deckData.generatedHtml = data.html;
+          generatedUrls.html = data.html;
           openInNewTab(data.html);
           showPreview(data.html);
         } else {
@@ -1160,57 +1216,57 @@
       }
     }
 
-    function showGammaSuccess(data) {
-      // Store URLs for download buttons
-      deckData.pptxUrl = data.pptxUrl;
-      deckData.pdfUrl = data.pdfUrl;
+    let generatedUrls = {};
 
-      // Build download buttons HTML
-      let downloadButtons = '';
-      if (data.pptxUrl) {
-        downloadButtons += `
-          <button class="action-btn secondary" onclick="downloadFile('${data.pptxUrl}', 'pptx')">
-            <i data-lucide="file-presentation" style="width: 16px; height: 16px;"></i>
-            PPTX
-          </button>
-        `;
-      }
-      if (data.pdfUrl) {
-        downloadButtons += `
-          <button class="action-btn secondary" onclick="downloadFile('${data.pdfUrl}', 'pdf')">
-            <i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
-            PDF
-          </button>
-        `;
-      }
+    function showGammaSuccess(data) {
+      // Store URLs
+      generatedUrls.pptxUrl = data.pptxUrl;
+      generatedUrls.pdfUrl = data.pdfUrl;
+      generatedUrls.gammaUrl = data.gammaUrl;
 
       const content = document.createElement('div');
       content.innerHTML = `
-        <div style="margin-bottom: 16px;">
-          <strong>${escapeHtml(data.title || 'Your presentation')}</strong> is ready!
+        <div style="margin-bottom: 8px; font-size: 18px; font-weight: 500;">
+          ${escapeHtml(data.title || 'Your presentation')}
         </div>
-        <div style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px;">
-          ${data.slideCount || ''} slides · ${data.photosUsed || 0} photos from Pexels
+        <div style="margin-bottom: 24px; color: var(--text-muted); font-size: 14px;">
+          ${data.slideCount || ''} slides · ${data.photosUsed || 0} photos
         </div>
-        <div class="preview-actions">
-          <button class="action-btn secondary" onclick="resetConversation()">
-            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
-            New
+
+        <div class="download-section">
+          ${data.pptxUrl ? `
+          <button class="download-btn" onclick="downloadFile('${data.pptxUrl}')">
+            <div class="download-btn-icon">
+              <i data-lucide="download" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div class="download-btn-text">
+              <div class="download-btn-title">Download PowerPoint</div>
+              <div class="download-btn-subtitle">For Google Slides, PowerPoint, Keynote</div>
+            </div>
           </button>
-          ${downloadButtons}
-          <button class="action-btn primary" onclick="window.open('${data.gammaUrl}', '_blank')">
-            <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
-            Open in Gamma
+          ` : ''}
+
+          <button class="download-btn primary" onclick="window.open('${data.gammaUrl}', '_blank')">
+            <div class="download-btn-icon">
+              <i data-lucide="sparkles" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div class="download-btn-text">
+              <div class="download-btn-title">Edit in Gamma</div>
+              <div class="download-btn-subtitle">Full editing, export PDF for Canva</div>
+            </div>
           </button>
         </div>
+
+        <button class="action-btn secondary" style="width: 100%;" onclick="resetConversation()">
+          <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+          Create another
+        </button>
       `;
       addMessage(content);
       setTimeout(() => lucide.createIcons(), 50);
-      currentStep = 'done';
     }
 
-    function downloadFile(url, format) {
-      // Open in new tab - browser will handle download
+    function downloadFile(url) {
       window.open(url, '_blank');
     }
 
@@ -1226,7 +1282,7 @@
             <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
             New
           </button>
-          <button class="action-btn secondary" onclick="openInNewTab(deckData.generatedHtml)">
+          <button class="action-btn secondary" onclick="openInNewTab(generatedUrls.html)">
             <i data-lucide="external-link" style="width: 16px; height: 16px;"></i>
             Open
           </button>
@@ -1253,19 +1309,23 @@
     }
 
     function downloadDeck() {
-      if (!deckData.generatedHtml) return;
-      const blob = new Blob([deckData.generatedHtml], { type: 'text/html' });
+      if (!generatedUrls.html) return;
+      const blob = new Blob([generatedUrls.html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${deckData.topic.slice(0, 30).replace(/[^a-z0-9]/gi, '-')}-deck.html`;
+      const filename = deckSummary ? deckSummary.topic.slice(0, 30).replace(/[^a-z0-9]/gi, '-') : 'presentation';
+      a.download = `${filename}-deck.html`;
       a.click();
       URL.revokeObjectURL(url);
     }
 
     function resetConversation() {
       chatContainer.innerHTML = '';
-      deckData = { topic: '', slides: 7, generatedHtml: null };
+      conversationHistory = [];
+      deckSummary = null;
+      isReadyToGenerate = false;
+      generatedUrls = {};
       inputArea.classList.remove('hidden');
       startConversation();
     }
@@ -1278,10 +1338,8 @@
       userInput.value = '';
       userInput.style.height = 'auto';
 
-      if (currentStep === 'details') {
-        deckData.topic = text;
-        setTimeout(() => askSlideCount(), 300);
-      }
+      // Send to Apollo for conversation
+      sendToApollo(text);
     }
 
     sendBtn.addEventListener('click', handleInput);
