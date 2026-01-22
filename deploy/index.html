@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apollo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #FAF9F6;
+      --text: #2a2520;
+      --muted: #7a7568;
+      --border: rgba(42,37,32,0.1);
+      --accent: #2a2520;
+      --surface: #F5F4F1;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    header {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .beta-badge {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 2px 6px;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 4px;
+      text-transform: lowercase;
+    }
+
+    .new-btn {
+      padding: 8px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .new-btn:hover {
+      border-color: var(--text);
+    }
+
+    /* Chat */
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .msg {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.user {
+      text-align: right;
+    }
+
+    .msg.user span {
+      display: inline-block;
+      background: rgba(42,37,32,0.04);
+      padding: 12px 16px;
+      border-radius: 16px 16px 4px 16px;
+      max-width: 80%;
+    }
+
+    .msg.apollo {
+      line-height: 1.7;
+    }
+
+    /* Thinking indicator - small spinner style */
+    .thinking-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .thinking-text {
+      transition: opacity 0.3s ease;
+    }
+
+    /* Generation progress - expandable */
+    .gen-progress {
+      background: rgba(42,37,32,0.03);
+      border-radius: 14px;
+      overflow: hidden;
+      max-width: 320px;
+    }
+
+    .gen-progress-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .gen-progress-header:hover {
+      background: rgba(42,37,32,0.02);
+    }
+
+    .gen-progress-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gen-progress-text {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .gen-progress-chevron {
+      color: var(--muted);
+      transition: transform 0.3s ease;
+    }
+
+    .gen-progress.expanded .gen-progress-chevron {
+      transform: rotate(180deg);
+    }
+
+    .gen-progress-steps {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+
+    .gen-progress.expanded .gen-progress-steps {
+      max-height: 300px;
+      padding: 0 16px 14px;
+    }
+
+    .gen-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      font-size: 13px;
+      color: var(--muted);
+      opacity: 0.5;
+      transition: all 0.3s ease;
+    }
+
+    .gen-step.active {
+      color: var(--text);
+      opacity: 1;
+    }
+
+    .gen-step.done {
+      opacity: 0.7;
+    }
+
+    .gen-step-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      background: rgba(42,37,32,0.06);
+      transition: all 0.3s ease;
+    }
+
+    .gen-step.active .gen-step-icon {
+      background: var(--text);
+      color: white;
+    }
+
+    .gen-step.done .gen-step-icon {
+      background: #22c55e;
+      color: white;
+    }
+
+    .gen-step-text {
+      flex: 1;
+    }
+
+    /* Input */
+    .input-area {
+      padding: 20px 0 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .input-box {
+      display: flex;
+      gap: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 6px 6px 6px 16px;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--text);
+    }
+
+    .input-box textarea {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      padding: 8px 0;
+      line-height: 1.5;
+    }
+
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--text);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .send-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* Summary card */
+    .summary {
+      background: rgba(42,37,32,0.03);
+      padding: 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .summary div { margin: 4px 0; }
+    .summary strong { color: var(--text); }
+
+    /* Generate button */
+    .gen-btn {
+      width: 100%;
+      padding: 10px 16px;
+      background: var(--text);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+      transition: opacity 0.15s ease;
+    }
+
+    .gen-btn:hover { opacity: 0.85; }
+    .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Success */
+    .success-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+
+    .success-card h3 {
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .success-card p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .success-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .dl-btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.15s ease;
+    }
+
+    .dl-btn.primary {
+      background: var(--text);
+      color: white;
+      border: none;
+    }
+
+    .dl-btn.secondary {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .dl-btn:hover { opacity: 0.85; }
+
+    /* Code modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(250,250,250,0.9);
+      backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-box {
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(42,37,32,0.1);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-box h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .modal-box p {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 24px;
+      font-size: 15px;
+    }
+
+    .modal-box input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: monospace;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .modal-box input:focus {
+      outline: none;
+      border-color: var(--text);
+    }
+
+    .modal-box button {
+      width: 100%;
+      padding: 14px;
+      background: var(--text);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .modal-box button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .error {
+      color: #dc2626;
+      font-size: 13px;
+      margin-bottom: 12px;
+      padding: 10px;
+      background: rgba(220,38,38,0.08);
+      border-radius: 8px;
+      display: none;
+    }
+
+    .error.show { display: block; }
+
+    .hidden { display: none !important; }
+
+    /* ===== POLISH FEATURES ===== */
+
+    /* Usage Display */
+    .usage-info {
+      text-align: center;
+      padding: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+      margin-top: 12px;
+    }
+
+    .usage-info.low {
+      color: #f59e0b;
+    }
+
+    /* Confetti */
+    .confetti-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      animation: confettiFall 3s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* Success Checkmark */
+    .success-check {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      animation: checkPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes checkPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .success-card.animated {
+      animation: cardSlide 0.4s ease-out;
+    }
+
+    @keyframes cardSlide {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Welcome Screen */
+    .welcome-message {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .welcome-message h2 {
+      font-family: 'Fraunces', serif;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .welcome-message p {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .example-prompts {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .example-prompt {
+      padding: 12px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .example-prompt:hover {
+      border-color: var(--text);
+      transform: translateX(4px);
+    }
+
+    /* Micro-interactions */
+    .input-box {
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .input-box:focus-within {
+      box-shadow: 0 0 0 3px rgba(42,37,32,0.05);
+    }
+
+    .send-btn {
+      transition: all 0.2s ease;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
+
+    .send-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+
+    .gen-btn {
+      transition: all 0.2s ease;
+    }
+
+    .gen-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(42,37,32,0.12);
+    }
+
+    .dl-btn {
+      transition: all 0.2s ease;
+    }
+
+    .dl-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(42,37,32,0.1);
+    }
+
+    .new-btn {
+      transition: all 0.2s ease;
+    }
+
+    .new-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(42,37,32,0.08);
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 0 16px; }
+      .msg.user span { max-width: 90%; }
+      .welcome-message { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Access Code Modal (disabled) -->
+  <div class="modal hidden" id="modal">
+    <div class="modal-box">
+      <h2>Apollo</h2>
+      <p>Enter your access code to continue</p>
+      <div class="error" id="error"></div>
+      <input type="text" id="codeInput" placeholder="sk_..." autocomplete="off" />
+      <button id="submitCode">Continue</button>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div class="container" id="app">
+    <header>
+      <div class="logo">Apollo <span class="beta-badge">beta</span></div>
+      <button class="new-btn" onclick="reset()">
+        <i data-lucide="plus" style="width:14px;height:14px"></i>
+        New
+      </button>
+    </header>
+
+    <div class="chat" id="chat"></div>
+
+    <div class="input-area">
+      <div class="input-box">
+        <textarea id="input" placeholder="Describe your idea..." rows="1"></textarea>
+        <button class="send-btn" id="sendBtn">
+          <i data-lucide="arrow-up" style="width:18px;height:18px"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const API_BASE = 'https://advpygqokfxmomlumkgl.supabase.co/functions/v1';
+
+    // Master key - unlimited usage
+    let accessKey = 'sk_master_104547201485a2c890e5b4b3b48190be98bea1d8891c9196';
+    let conversation = [];
+    let summary = null;
+
+    const $ = id => document.getElementById(id);
+    const chat = $('chat');
+    const input = $('input');
+    const sendBtn = $('sendBtn');
+    const modal = $('modal');
+    const app = $('app');
+    const codeInput = $('codeInput');
+    const error = $('error');
+
+    // Skip access code - show app immediately
+    showApp();
+
+    // Submit code
+    $('submitCode').addEventListener('click', async () => {
+      const code = codeInput.value.trim();
+      if (!code) return;
+
+      $('submitCode').disabled = true;
+      $('submitCode').textContent = 'Checking...';
+      hideError();
+
+      const valid = await validateKey(code);
+
+      if (valid) {
+        accessKey = code;
+        localStorage.setItem('apollo_key', code);
+        showApp();
+      } else {
+        showError('Invalid access code');
+      }
+
+      $('submitCode').disabled = false;
+      $('submitCode').textContent = 'Continue';
+    });
+
+    codeInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') $('submitCode').click();
+    });
+
+    async function validateKey(key) {
+      try {
+        const res = await fetch(`${API_BASE}/chat-with-apollo`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-access-key': key
+          },
+          body: JSON.stringify({ messages: [{ role: 'user', content: 'hi' }] })
+        });
+        const data = await res.json();
+        return data.success === true;
+      } catch {
+        return false;
+      }
+    }
+
+    function showApp() {
+      modal.classList.add('hidden');
+      app.classList.remove('hidden');
+      showWelcome();
+      input.focus();
+    }
+
+    function showWelcome() {
+      const div = document.createElement('div');
+      div.className = 'welcome-message';
+      div.innerHTML = `
+        <h2>What are you building?</h2>
+        <p>Describe your idea and I'll create a presentation for you.</p>
+        <div class="example-prompts">
+          <button class="example-prompt" onclick="usePrompt('Startup pitch for a food delivery app targeting college students')">
+            Startup pitch for investors
+          </button>
+          <button class="example-prompt" onclick="usePrompt('Quarterly sales report for the leadership team')">
+            Quarterly business report
+          </button>
+          <button class="example-prompt" onclick="usePrompt('Product launch presentation for a new AI writing tool')">
+            Product launch deck
+          </button>
+        </div>
+      `;
+      chat.appendChild(div);
+    }
+
+    function usePrompt(text) {
+      const welcome = chat.querySelector('.welcome-message');
+      if (welcome) welcome.remove();
+      input.value = text;
+      send();
+    }
+
+    function showError(msg) {
+      error.textContent = msg;
+      error.classList.add('show');
+    }
+
+    function hideError() {
+      error.classList.remove('show');
+    }
+
+    function escape(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function addUser(text) {
+      const div = document.createElement('div');
+      div.className = 'msg user';
+      div.innerHTML = `<span>${escape(text)}</span>`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function addApollo(content) {
+      const div = document.createElement('div');
+      div.className = 'msg apollo';
+      if (typeof content === 'string') {
+        div.innerHTML = content;
+      } else {
+        div.appendChild(content);
+      }
+      chat.appendChild(div);
+      lucide.createIcons();
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    // Creative thinking messages - varied and fun
+    const THINKING_MESSAGES = [
+      "Let me cook...",
+      "Thinking...",
+      "On it...",
+      "Hmm, interesting...",
+      "Working my magic...",
+      "Structuring your story...",
+      "Finding the perfect angle...",
+      "Connecting the dots...",
+      "Building your narrative...",
+      "Give me a sec...",
+      "Almost there...",
+      "Brewing brilliance...",
+      "Crafting something good...",
+      "Getting the vibes right...",
+      "Putting it together...",
+      "Reading between the lines...",
+      "Analyzing your needs...",
+    ];
+
+    let thinkingInterval = null;
+    let thinkingMsgIndex = 0;
+
+    // Shuffle array for variety
+    function shuffleMessages() {
+      const shuffled = [...THINKING_MESSAGES];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    let currentMessages = shuffleMessages();
+
+    function showThinking() {
+      currentMessages = shuffleMessages(); // Reshuffle each time
+      const div = document.createElement('div');
+      div.className = 'msg apollo';
+      div.id = 'thinking';
+      div.innerHTML = `
+        <div class="thinking-box">
+          <div class="spinner"></div>
+          <span class="thinking-text">${currentMessages[0]}</span>
+        </div>
+      `;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+
+      // Rotate messages faster (every 2 sec)
+      thinkingMsgIndex = 0;
+      thinkingInterval = setInterval(() => {
+        thinkingMsgIndex = (thinkingMsgIndex + 1) % currentMessages.length;
+        const textEl = div.querySelector('.thinking-text');
+        if (textEl) {
+          textEl.style.opacity = '0';
+          setTimeout(() => {
+            textEl.textContent = currentMessages[thinkingMsgIndex];
+            textEl.style.opacity = '1';
+          }, 150);
+        }
+      }, 2000);
+    }
+
+    function hideThinking() {
+      if (thinkingInterval) clearInterval(thinkingInterval);
+      thinkingInterval = null;
+      const el = $('thinking');
+      if (el) el.remove();
+    }
+
+    async function send() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Remove welcome message if present
+      const welcome = chat.querySelector('.welcome-message');
+      if (welcome) welcome.remove();
+
+      addUser(text);
+      input.value = '';
+      input.style.height = 'auto';
+
+      conversation.push({ role: 'user', content: text });
+
+      showThinking();
+      sendBtn.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/chat-with-apollo`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-access-key': accessKey
+          },
+          body: JSON.stringify({ messages: conversation })
+        });
+
+        const data = await res.json();
+        hideThinking();
+        sendBtn.disabled = false;
+
+        if (!data.success) throw new Error(data.error);
+
+        conversation.push({ role: 'assistant', content: data.message });
+
+        if (data.ready) {
+          summary = data.summary;
+          showReady(data.message, data.summary);
+        } else {
+          addApollo(data.message);
+        }
+
+      } catch (err) {
+        hideThinking();
+        sendBtn.disabled = false;
+        addApollo(`Something went wrong: ${err.message}`);
+      }
+    }
+
+    function showReady(message, sum) {
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <div>${escape(message)}</div>
+        <div class="summary">
+          <div><strong>Topic:</strong> ${escape(sum.topic)}</div>
+          <div><strong>Audience:</strong> ${escape(sum.audience)}</div>
+          <div><strong>Slides:</strong> ${sum.slides}</div>
+        </div>
+        <button class="gen-btn" onclick="generate()">
+          Create presentation
+        </button>
+      `;
+      addApollo(div);
+    }
+
+    // Generation stages with cute rotating messages
+    const GEN_STAGES = [
+      {
+        id: 'research',
+        label: 'Research & Writing',
+        messages: [
+          "Crafting your narrative...",
+          "Wordsmithing the headlines...",
+          "Distilling your brilliance...",
+          "Mining for golden insights...",
+        ]
+      },
+      {
+        id: 'photos',
+        label: 'Finding Visuals',
+        messages: [
+          "Hunting for the perfect shots...",
+          "Scouting stunning visuals...",
+          "Matching vibes to images...",
+          "Curating your visual story...",
+        ]
+      },
+      {
+        id: 'design',
+        label: 'Designing Slides',
+        messages: [
+          "Laying out the masterpiece...",
+          "Making it look expensive...",
+          "Arranging pixels with care...",
+          "Balancing beauty and clarity...",
+        ]
+      },
+      {
+        id: 'polish',
+        label: 'Final Polish',
+        messages: [
+          "Sprinkling finishing touches...",
+          "Adding that professional shine...",
+          "Making sure it's chef's kiss...",
+          "Almost ready for the spotlight...",
+        ]
+      }
+    ];
+
+    let progressEl = null;
+    let stageTimer = null;
+    let messageTimer = null;
+    let currentStage = 0;
+    let currentMsgIndex = 0;
+    let isExpanded = false;
+
+    function showProgress() {
+      const div = document.createElement('div');
+      div.className = 'msg apollo';
+      div.id = 'progress';
+
+      const stage = GEN_STAGES[0];
+      div.innerHTML = `
+        <div class="gen-progress" id="genProgress">
+          <div class="gen-progress-header" onclick="toggleProgress()">
+            <div class="gen-progress-icon">
+              <div class="spinner" style="width:14px;height:14px;border-width:2px"></div>
+            </div>
+            <span class="gen-progress-text">${stage.messages[0]}</span>
+            <i data-lucide="chevron-down" class="gen-progress-chevron" style="width:16px;height:16px"></i>
+          </div>
+          <div class="gen-progress-steps">
+            ${GEN_STAGES.map((s, i) => `
+              <div class="gen-step ${i === 0 ? 'active' : ''}" data-stage="${i}">
+                <div class="gen-step-icon">${i === 0 ? '→' : '○'}</div>
+                <span class="gen-step-text">${s.label}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      chat.appendChild(div);
+      lucide.createIcons();
+      chat.scrollTop = chat.scrollHeight;
+      progressEl = div;
+      currentStage = 0;
+      currentMsgIndex = 0;
+      isExpanded = false;
+
+      // Rotate messages within current stage
+      messageTimer = setInterval(() => {
+        const stage = GEN_STAGES[currentStage];
+        if (!stage) return;
+        currentMsgIndex = (currentMsgIndex + 1) % stage.messages.length;
+        const textEl = progressEl.querySelector('.gen-progress-text');
+        if (textEl) {
+          textEl.style.opacity = '0.5';
+          setTimeout(() => {
+            textEl.textContent = stage.messages[currentMsgIndex];
+            textEl.style.opacity = '1';
+          }, 150);
+        }
+      }, 2000);
+
+      // Advance stages
+      stageTimer = setInterval(() => {
+        currentStage++;
+        if (currentStage < GEN_STAGES.length) {
+          updateGenStage(currentStage);
+        }
+      }, 6000);
+    }
+
+    function toggleProgress() {
+      const el = document.getElementById('genProgress');
+      if (el) {
+        isExpanded = !isExpanded;
+        el.classList.toggle('expanded', isExpanded);
+      }
+    }
+
+    function updateGenStage(idx) {
+      if (!progressEl) return;
+      const steps = progressEl.querySelectorAll('.gen-step');
+      steps.forEach((s, i) => {
+        s.classList.remove('active', 'done');
+        const icon = s.querySelector('.gen-step-icon');
+        if (i < idx) {
+          s.classList.add('done');
+          icon.textContent = '✓';
+        } else if (i === idx) {
+          s.classList.add('active');
+          icon.textContent = '→';
+        } else {
+          icon.textContent = '○';
+        }
+      });
+
+      // Update header text
+      const stage = GEN_STAGES[idx];
+      if (stage) {
+        currentMsgIndex = 0;
+        const textEl = progressEl.querySelector('.gen-progress-text');
+        if (textEl) textEl.textContent = stage.messages[0];
+      }
+
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function hideProgress() {
+      if (stageTimer) clearInterval(stageTimer);
+      if (messageTimer) clearInterval(messageTimer);
+      stageTimer = null;
+      messageTimer = null;
+      if (progressEl) progressEl.remove();
+      progressEl = null;
+    }
+
+    async function generate() {
+      if (!summary) return;
+
+      document.querySelectorAll('.gen-btn').forEach(b => b.disabled = true);
+      showProgress();
+
+      try {
+        const context = conversation.map(m =>
+          `${m.role === 'user' ? 'User' : 'Apollo'}: ${m.content}`
+        ).join('\n');
+
+        const res = await fetch(`${API_BASE}/generate-deck`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-access-key': accessKey
+          },
+          body: JSON.stringify({
+            topic: `${summary.topic} for ${summary.audience}. Goal: ${summary.goal}`,
+            slides: summary.slides,
+            documentContext: context
+          })
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error('API error:', res.status, text);
+          throw new Error(`Server error (${res.status})`);
+        }
+
+        const data = await res.json();
+        hideProgress();
+
+        if (!data.success) throw new Error(data.error || 'Generation failed');
+
+        if (data.gammaUrl) {
+          // Auto-download PPTX if available
+          if (data.pptxUrl) {
+            window.open(data.pptxUrl, '_blank');
+          }
+          showSuccess(data);
+        } else {
+          throw new Error('No presentation generated');
+        }
+
+      } catch (err) {
+        hideProgress();
+        addApollo(`Failed: ${err.message}. <button class="gen-btn" style="margin-top:12px" onclick="generate()">Try again</button>`);
+      }
+    }
+
+    function showConfetti() {
+      const container = document.createElement('div');
+      container.className = 'confetti-container';
+      document.body.appendChild(container);
+
+      const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+        confetti.style.width = (6 + Math.random() * 8) + 'px';
+        confetti.style.height = (6 + Math.random() * 8) + 'px';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        container.appendChild(confetti);
+      }
+      setTimeout(() => container.remove(), 4000);
+    }
+
+    function showSuccess(data) {
+      showConfetti();
+
+      const remaining = data.usage ? (data.usage.decks_limit - data.usage.decks_used) : null;
+      const isLow = remaining !== null && remaining <= 3;
+
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <div class="success-card animated">
+          <div class="success-check">
+            <i data-lucide="check" style="width:24px;height:24px;color:white"></i>
+          </div>
+          <h3 style="text-align:center">${escape(data.title || 'Your presentation is ready!')}</h3>
+          <p style="text-align:center">${data.slideCount || ''} slides · ${data.photosUsed || 0} photos</p>
+          <div class="success-btns">
+            ${data.pptxUrl ? `<button class="dl-btn primary" onclick="window.open('${data.pptxUrl}')">
+              <i data-lucide="download" style="width:18px;height:18px"></i>
+              Download PowerPoint
+            </button>` : ''}
+            ${data.pdfUrl ? `<button class="dl-btn secondary" onclick="window.open('${data.pdfUrl}')">
+              <i data-lucide="file-text" style="width:18px;height:18px"></i>
+              Download PDF
+            </button>` : ''}
+            ${data.gammaUrl ? `<button class="dl-btn secondary" onclick="window.open('${data.gammaUrl}')">
+              <i data-lucide="external-link" style="width:18px;height:18px"></i>
+              Edit in Gamma
+            </button>` : ''}
+          </div>
+          ${remaining !== null ? `
+            <div class="usage-info ${isLow ? 'low' : ''}">
+              ${remaining} presentation${remaining !== 1 ? 's' : ''} remaining
+            </div>
+          ` : ''}
+        </div>
+        <button class="gen-btn" style="background:var(--bg);color:var(--text);border:1px solid var(--border)" onclick="reset()">
+          <i data-lucide="plus" style="width:16px;height:16px"></i>
+          Create another
+        </button>
+      `;
+      addApollo(div);
+    }
+
+    function reset() {
+      chat.innerHTML = '';
+      conversation = [];
+      summary = null;
+      showWelcome();
+      input.focus();
+    }
+
+    sendBtn.addEventListener('click', send);
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    });
+  </script>
+</body>
+</html>
