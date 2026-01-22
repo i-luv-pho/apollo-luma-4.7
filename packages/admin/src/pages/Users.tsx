@@ -75,21 +75,21 @@ export default function Users() {
 
   return (
     <div class="space-y-6">
-      <h1 class="text-2xl font-bold text-white">Users</h1>
+      <h1 class="text-2xl font-bold text-white fade-in-up">Users</h1>
 
       {/* Filters */}
-      <div class="flex gap-3">
+      <div class="flex gap-3 fade-in-up stagger-1">
         <input
           type="text"
           placeholder="Search by email..."
           value={search()}
           onInput={(e) => setSearch(e.currentTarget.value)}
-          class="flex-1 max-w-xs px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-white placeholder-[#52525b] focus:outline-none focus:border-[#3a3a3a]"
+          class="input-modern flex-1 max-w-xs"
         />
         <select
           value={statusFilter()}
           onChange={(e) => setStatusFilter(e.currentTarget.value)}
-          class="px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-white focus:outline-none focus:border-[#3a3a3a]"
+          class="input-modern w-40"
         >
           <option value="all">All users</option>
           <option value="activated">Activated</option>
@@ -98,73 +98,93 @@ export default function Users() {
       </div>
 
       {/* Table */}
-      <div class="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] overflow-hidden">
+      <div class="glass-card overflow-hidden fade-in-up stagger-2">
         <Show
           when={!users.loading && (users() || []).length > 0}
           fallback={
             <div class="p-12 text-center">
               <Show when={users.loading}>
-                <p class="text-[#71717a]">Loading...</p>
+                <div class="flex flex-col items-center gap-4">
+                  <div class="spinner" />
+                  <p class="text-[#71717a]">Loading users...</p>
+                </div>
               </Show>
               <Show when={!users.loading}>
-                <p class="text-[#71717a]">No users yet</p>
-                <p class="text-[#52525b] text-sm mt-1">Users will appear here when they sign up</p>
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 mx-auto mb-4 flex items-center justify-center float">
+                  <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <p class="text-white font-medium text-lg">No users yet</p>
+                <p class="text-[#71717a] text-sm mt-2">Users will appear here when they sign up</p>
               </Show>
             </div>
           }
         >
-          <table class="w-full">
+          <table class="table-modern">
             <thead>
-              <tr class="text-left text-[#71717a] text-sm border-b border-[#2a2a2a]">
-                <th class="px-4 py-3 font-medium">Email</th>
-                <th class="px-4 py-3 font-medium">Status</th>
-                <th class="px-4 py-3 font-medium">Usage</th>
-                <th class="px-4 py-3 font-medium">Joined</th>
-                <th class="px-4 py-3 font-medium"></th>
+              <tr>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Usage</th>
+                <th>Joined</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               <For each={filteredUsers()}>
-                {(user) => (
-                  <tr class="border-b border-[#2a2a2a] last:border-0 hover:bg-[#262626]">
-                    <td class="px-4 py-3">
-                      <p class="text-white">{user.email}</p>
+                {(user, index) => (
+                  <tr class="fade-in" style={{ "animation-delay": `${index() * 0.05}s` }}>
+                    <td>
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
+                          <span class="text-indigo-400 text-sm font-medium">
+                            {user.email.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <p class="text-white">{user.email}</p>
+                      </div>
                     </td>
-                    <td class="px-4 py-3">
+                    <td>
                       <span
-                        class="px-2 py-1 rounded text-xs font-medium"
+                        class="badge"
                         classList={{
-                          "bg-green-500/10 text-green-500": user.activated,
-                          "bg-yellow-500/10 text-yellow-500": !user.activated,
+                          "badge-success": user.activated,
+                          "badge-warning": !user.activated,
                         }}
                       >
                         {user.activated ? "Activated" : "Pending"}
                       </span>
                     </td>
-                    <td class="px-4 py-3">
-                      <div class="flex items-center gap-2">
-                        <div class="w-20 h-1.5 bg-[#262626] rounded-full overflow-hidden">
+                    <td>
+                      <div class="flex items-center gap-3">
+                        <div class="w-24 h-2 bg-white/5 rounded-full overflow-hidden">
                           <div
-                            class="h-full rounded-full bg-[#6366f1]"
+                            class="h-full rounded-full transition-all duration-500"
                             style={{
                               width: `${Math.min((user.decks_used / user.decks_limit) * 100, 100)}%`,
+                              background: user.decks_used >= user.decks_limit
+                                ? "linear-gradient(135deg, #ef4444, #dc2626)"
+                                : "linear-gradient(135deg, #6366f1, #8b5cf6)",
                             }}
                           />
                         </div>
-                        <span class="text-[#71717a] text-sm">
+                        <span class="text-[#71717a] text-sm font-medium">
                           {user.decks_used}/{user.decks_limit}
                         </span>
                       </div>
                     </td>
-                    <td class="px-4 py-3 text-[#71717a] text-sm">
+                    <td class="text-[#71717a] text-sm">
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
-                    <td class="px-4 py-3">
+                    <td>
                       <button
                         onClick={() => setSelectedUser(user)}
-                        class="text-[#71717a] hover:text-white px-2"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-[#71717a] hover:text-white hover:bg-white/5 transition-all duration-200"
                       >
-                        •••
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
                       </button>
                     </td>
                   </tr>
@@ -175,50 +195,99 @@ export default function Users() {
         </Show>
       </div>
 
-      {/* Modal */}
+      {/* Modal with animation */}
       <Show when={selectedUser()}>
-        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedUser(null)}>
-          <div class="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-            <div class="flex justify-between items-start mb-4">
-              <div>
-                <p class="text-white font-medium">{selectedUser()!.email}</p>
-                <p class="text-[#52525b] text-sm">
-                  {selectedUser()!.activated ? "Activated" : "Pending approval"}
-                </p>
+        <div
+          class="fixed inset-0 flex items-center justify-center z-50"
+          onClick={() => setSelectedUser(null)}
+        >
+          {/* Backdrop */}
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm fade-in" />
+
+          {/* Modal */}
+          <div
+            class="relative glass-card w-full max-w-sm p-6 m-4 fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div class="flex justify-between items-start mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                  <span class="text-white text-lg font-bold">
+                    {selectedUser()!.email.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p class="text-white font-semibold">{selectedUser()!.email}</p>
+                  <span
+                    class="badge mt-1"
+                    classList={{
+                      "badge-success": selectedUser()!.activated,
+                      "badge-warning": !selectedUser()!.activated,
+                    }}
+                  >
+                    {selectedUser()!.activated ? "Activated" : "Pending"}
+                  </span>
+                </div>
               </div>
-              <button onClick={() => setSelectedUser(null)} class="text-[#71717a] hover:text-white text-xl">×</button>
+              <button
+                onClick={() => setSelectedUser(null)}
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-[#71717a] hover:text-white hover:bg-white/10 transition-all duration-200"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
-            <div class="mb-4 p-3 bg-[#262626] rounded-lg">
-              <p class="text-[#71717a] text-sm">Decks used</p>
-              <p class="text-white text-lg">{selectedUser()!.decks_used} / {selectedUser()!.decks_limit}</p>
+            <div class="mb-6 p-4 rounded-xl bg-white/5">
+              <p class="text-[#71717a] text-sm mb-2">Deck Usage</p>
+              <div class="flex items-end gap-2 mb-3">
+                <p class="text-3xl font-bold text-white">{selectedUser()!.decks_used}</p>
+                <p class="text-[#71717a] mb-1">/ {selectedUser()!.decks_limit}</p>
+              </div>
+              <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min((selectedUser()!.decks_used / selectedUser()!.decks_limit) * 100, 100)}%`,
+                    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                  }}
+                />
+              </div>
             </div>
 
-            <div class="space-y-2">
+            <div class="space-y-3">
               <button
                 onClick={() => toggleActivation(selectedUser()!)}
                 disabled={updating()}
-                class="w-full px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                class="w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50 ripple"
                 classList={{
-                  "bg-green-500/10 hover:bg-green-500/20 text-green-500": !selectedUser()!.activated,
-                  "bg-red-500/10 hover:bg-red-500/20 text-red-500": selectedUser()!.activated,
+                  "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40": !selectedUser()!.activated,
+                  "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40": selectedUser()!.activated,
                 }}
               >
-                {selectedUser()!.activated ? "Deactivate" : "Activate"}
+                {updating() ? (
+                  <div class="flex items-center justify-center gap-2">
+                    <div class="spinner w-4 h-4 border-2" />
+                    <span>Updating...</span>
+                  </div>
+                ) : (
+                  selectedUser()!.activated ? "Deactivate User" : "Activate User"
+                )}
               </button>
 
               <div class="flex gap-2">
                 <button
                   onClick={() => updateLimit(selectedUser()!, selectedUser()!.decks_limit + 10)}
                   disabled={updating()}
-                  class="flex-1 px-4 py-2 bg-[#262626] hover:bg-[#2a2a2a] text-white rounded-lg text-sm disabled:opacity-50"
+                  class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium disabled:opacity-50 transition-all duration-200"
                 >
                   +10 Decks
                 </button>
                 <button
                   onClick={() => updateLimit(selectedUser()!, selectedUser()!.decks_limit + 50)}
                   disabled={updating()}
-                  class="flex-1 px-4 py-2 bg-[#262626] hover:bg-[#2a2a2a] text-white rounded-lg text-sm disabled:opacity-50"
+                  class="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-medium disabled:opacity-50 transition-all duration-200"
                 >
                   +50 Decks
                 </button>

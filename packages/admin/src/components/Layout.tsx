@@ -17,19 +17,28 @@ export default function Layout(props: ParentProps) {
 
   return (
     <div class="flex min-h-screen">
-      {/* Sidebar */}
+      {/* Animated gradient background */}
+      <div class="gradient-bg" />
+      <div class="grid-overlay" />
+      {/* Sidebar with glassmorphism */}
       <aside
-        class="fixed left-0 top-0 h-full bg-[#1a1a1a] border-r border-[#2a2a2a] transition-all duration-200 z-50"
-        style={{ width: sidebarOpen() ? "240px" : "64px" }}
+        class="fixed left-0 top-0 h-full transition-all duration-300 z-50"
+        style={{
+          width: sidebarOpen() ? "240px" : "64px",
+          background: "rgba(26, 26, 26, 0.8)",
+          "backdrop-filter": "blur(20px)",
+          "-webkit-backdrop-filter": "blur(20px)",
+          "border-right": "1px solid rgba(255, 255, 255, 0.08)"
+        }}
       >
         {/* Logo */}
-        <div class="h-16 flex items-center px-4 border-b border-[#2a2a2a]">
+        <div class="h-16 flex items-center px-4 border-b border-white/5">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 float">
               <span class="text-white font-bold text-sm">A</span>
             </div>
             {sidebarOpen() && (
-              <span class="font-semibold text-white">Apollo Admin</span>
+              <span class="font-semibold text-white tracking-tight">Apollo Admin</span>
             )}
           </div>
         </div>
@@ -40,10 +49,10 @@ export default function Layout(props: ParentProps) {
             {(item) => (
               <A
                 href={item.path}
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ripple"
                 classList={{
-                  "bg-[#6366f1] text-white": location.pathname === item.path,
-                  "text-[#a1a1aa] hover:bg-[#262626] hover:text-white": location.pathname !== item.path,
+                  "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25": location.pathname === item.path,
+                  "text-[#a1a1aa] hover:bg-white/5 hover:text-white": location.pathname !== item.path,
                 }}
               >
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +67,7 @@ export default function Layout(props: ParentProps) {
         {/* Toggle button */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen())}
-          class="absolute bottom-4 right-3 p-2 rounded-lg text-[#a1a1aa] hover:bg-[#262626] hover:text-white transition-colors"
+          class="absolute bottom-4 right-3 p-2 rounded-xl text-[#a1a1aa] hover:bg-white/5 hover:text-white transition-all duration-200 hover:scale-110"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

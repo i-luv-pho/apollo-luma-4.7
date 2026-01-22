@@ -28,7 +28,14 @@ Return a JSON object with this exact structure:
       "bullets": ["Point 1", "Point 2", "Point 3"],
       "imageQuery": "specific search term for stock photo",
       "speakerNotes": "What the presenter should say for this slide",
-      "mermaidDiagram": "flowchart LR\\n  A[Step 1] --> B[Step 2] --> C[Step 3]"
+      "mermaidDiagram": "flowchart LR\\n  A[Step 1] --> B[Step 2] --> C[Step 3]",
+      "chartData": {
+        "type": "bar",
+        "title": "Chart Title",
+        "labels": ["Label1", "Label2", "Label3"],
+        "data": [100, 80, 60],
+        "dataLabel": "What the data represents"
+      }
     }
   ]
 }
@@ -49,23 +56,51 @@ Return a JSON object with this exact structure:
    - Use --> for arrows between steps
    - Example: "flowchart LR\\n  A[Input] --> B[Process] --> C[Output]"
    - For other slide types, omit this field entirely
+6. DATA CHART (for slides with comparative data or statistics):
+   - Include a "chartData" field when the slide presents numerical comparisons
+   - Chart types:
+     * "bar" - for comparing values across categories (GDP by country, revenue by year)
+     * "pie" - for showing parts of a whole (market share, budget allocation)
+     * "doughnut" - like pie but with a hole (looks more modern)
+     * "line" - for showing trends over time (growth, historical data)
+   - Structure:
+     {
+       "type": "bar" | "pie" | "line" | "doughnut",
+       "title": "Chart title (e.g., 'GDP by Country 2024')",
+       "labels": ["USA", "China", "Japan"],
+       "data": [28.8, 18.5, 4.2],
+       "dataLabel": "GDP in Trillions USD"
+     }
+   - IMPORTANT: Use REAL, RESEARCHED data - never make up numbers
+   - Keep labels SHORT (1-3 words max)
+   - Best slides for charts: PROBLEM (stats), MARKET (size comparison), IMPACT (metrics)
+   - Charts take visual priority - only include ONE visual per slide (chart OR diagram OR photo)
 
 # Slide Flow for a Pitch Deck
-1. TITLE - Hook in 5 seconds
-2. PROBLEM - Feel the pain with real data
-3. SOLUTION - The answer, clear and simple (INCLUDE mermaidDiagram)
-4. HOW IT WORKS - Feel simple (INCLUDE mermaidDiagram)
-5. MARKET - Big and real numbers (optional)
-6. IMPACT/TRACTION - Transformation or results
-7. CTA - Exact next action
+1. TITLE - Hook in 5 seconds (use photo)
+2. PROBLEM - Feel the pain with real data (INCLUDE chartData if comparing statistics)
+3. SOLUTION - The answer, clear and simple (INCLUDE mermaidDiagram for process flow)
+4. HOW IT WORKS - Feel simple (INCLUDE mermaidDiagram for steps)
+5. MARKET - Big and real numbers (INCLUDE chartData for market size/comparison)
+6. IMPACT/TRACTION - Transformation or results (INCLUDE chartData for metrics)
+7. CTA - Exact next action (use photo)
 
 # Research & Quality
 - Research the topic thoroughly
 - Use specific numbers, dates, names when possible
 - Make it compelling, not generic
 - Each slide should tell part of a story
+- ALWAYS use real data for charts - never placeholder numbers
 
 Return ONLY the JSON object, no markdown, no explanation.`
+
+interface ChartData {
+  type: "bar" | "pie" | "line" | "doughnut"
+  title: string
+  labels: string[]
+  data: number[]
+  dataLabel?: string // Legend label like "GDP in Trillions"
+}
 
 interface SlideContent {
   headline: string
@@ -73,6 +108,7 @@ interface SlideContent {
   imageQuery: string
   speakerNotes: string
   mermaidDiagram?: string // Optional flowchart for Solution/How slides
+  chartData?: ChartData // Optional data visualization chart
 }
 
 interface ContentResponse {
@@ -171,7 +207,7 @@ function renderMermaidToUrl(syntax: string): string | null {
     const base64 = btoa(String.fromCharCode(...data))
     // URL-safe base64
     const urlSafe = base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-    return `https://kroki.io/mermaid/png/${urlSafe}`
+    return `https://mermaid.ink/img/${urlSafe}`
   } catch (e) {
     console.error("Failed to encode Mermaid diagram:", e)
     return null
@@ -188,6 +224,72 @@ function getDiagramsForSlides(slides: SlideContent[]): (string | null)[] {
 }
 
 /**
+ * Stage 2.75: Render data charts via QuickChart.io
+ * QuickChart is a free Chart.js rendering service - no API key needed
+ */
+function renderChartToUrl(chart: ChartData): string {
+  // Blue color palette for lively, professional look
+  const blueColors = [
+    "#2563eb", // Primary blue
+    "#3b82f6", // Lighter blue
+    "#60a5fa", // Even lighter
+    "#93c5fd", // Light blue
+    "#bfdbfe", // Very light
+    "#1d4ed8", // Darker blue
+  ]
+
+  const config = {
+    type: chart.type,
+    data: {
+      labels: chart.labels,
+      datasets: [
+        {
+          label: chart.dataLabel || chart.title,
+          data: chart.data,
+          backgroundColor:
+            chart.type === "pie" || chart.type === "doughnut" ? blueColors.slice(0, chart.data.length) : "#2563eb",
+          borderColor: chart.type === "pie" || chart.type === "doughnut" ? "#ffffff" : "#1d4ed8",
+          borderWidth: chart.type === "pie" || chart.type === "doughnut" ? 2 : 1,
+        },
+      ],
+    },
+    options: {
+      plugins: {
+        title: {
+          display: true,
+          text: chart.title,
+          font: { size: 18, weight: "bold" },
+          color: "#1a1a1a",
+        },
+        legend: {
+          display: chart.type === "pie" || chart.type === "doughnut",
+          position: "bottom",
+        },
+      },
+      scales:
+        chart.type === "pie" || chart.type === "doughnut"
+          ? undefined
+          : {
+              y: { beginAtZero: true, grid: { color: "#e5e7eb" } },
+              x: { grid: { display: false } },
+            },
+    },
+  }
+
+  const encoded = encodeURIComponent(JSON.stringify(config))
+  return `https://quickchart.io/chart?c=${encoded}&w=600&h=400&bkg=white`
+}
+
+function getChartsForSlides(slides: SlideContent[]): (string | null)[] {
+  return slides.map((slide) => {
+    if (slide.chartData) {
+      return renderChartToUrl(slide.chartData)
+    }
+    return null
+  })
+}
+
+/**
  * Stage 3: Gamma creates the presentation
  */
 async function createGammaPresentation(
@@ -196,9 +298,10 @@ async function createGammaPresentation(
   slides: SlideContent[],
   photos: (string | null)[],
   diagrams: (string | null)[],
+  charts: (string | null)[],
   theme: keyof typeof THEMES,
 ): Promise<{ generationId: string }> {
-  // Format content for Gamma with photo URLs and diagrams embedded
+  // Format content for Gamma with photo URLs, diagrams, and charts embedded
   // Use \n---\n to separate slides
   const inputParts: string[] = []
 
@@ -209,16 +312,18 @@ async function createGammaPresentation(
     const slide = slides[i]
     const photo = photos[i]
     const diagram = diagrams[i]
+    const chart = charts[i]
 
     let slideText = `# ${slide.headline}\n\n`
     slideText += slide.bullets.map((b) => `- ${b}`).join("\n")
 
-    // Embed diagram if available (for Solution/How slides)
-    // Diagrams take priority over photos for these slides
-    if (diagram) {
+    // Visual priority: Chart > Diagram > Photo
+    // Charts for data visualization, diagrams for process flows, photos for everything else
+    if (chart) {
+      slideText += `\n\n![data visualization](${chart})`
+    } else if (diagram) {
       slideText += `\n\n![process flow](${diagram})`
     } else if (photo) {
-      // Fall back to photo if no diagram
       slideText += `\n\n![](${photo})`
     }
 
@@ -458,6 +563,12 @@ serve(async (req) => {
     const diagramsFound = diagrams.filter((d) => d !== null).length
     console.log(`[Stage 2.5] Generated ${diagramsFound} diagrams`)
 
+    // Stage 2.75: Render data charts
+    console.log(`[Stage 2.75] Rendering charts...`)
+    const charts = getChartsForSlides(content.slides)
+    const chartsFound = charts.filter((c) => c !== null).length
+    console.log(`[Stage 2.75] Generated ${chartsFound} charts`)
+
     // Stage 3: Gamma creates presentation
     console.log(`[Stage 3] Creating Gamma presentation...`)
     const validTheme = theme in THEMES ? (theme as keyof typeof THEMES) : "pure-white"
@@ -467,6 +578,7 @@ serve(async (req) => {
       content.slides,
       photos,
       diagrams,
+      charts,
       validTheme,
     )
     console.log(`[Stage 3] Generation started: ${generationId}`)
@@ -493,6 +605,7 @@ serve(async (req) => {
         slideCount: content.slides.length + 1, // +1 for title slide
         photosUsed: photosFound,
         diagramsUsed: diagramsFound,
+        chartsUsed: chartsFound,
         gammaCredits: credits,
         usage: { decks_used: keyData.decks_used + 1, decks_limit: keyData.decks_limit },
       }),
