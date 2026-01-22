@@ -8,6 +8,7 @@ import { showToast } from "@apollo-ai/ui/toast"
 // Supabase API configuration
 const APOLLO_API_URL = "https://advpygqokfxmomlumkgl.supabase.co/functions/v1/generate-deck"
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg"
+const MASTER_ACCESS_KEY = "sk_master_104547201485a2c890e5b4b3b48190be98bea1d8891c9196"
 
 interface GenerateDeckResponse {
   success: boolean
@@ -53,7 +54,8 @@ export default function DeckBuilder() {
   // Form state
   const [topic, setTopic] = createSignal("")
   const [slides, setSlides] = createSignal(7)
-  const [accessKey, setAccessKey] = createSignal("")
+  // Use master key automatically - no user input needed
+  const accessKey = () => MASTER_ACCESS_KEY
 
   // UI state
   const [isGenerating, setIsGenerating] = createSignal(false)
@@ -64,7 +66,6 @@ export default function DeckBuilder() {
   // Validation
   const canGenerate = createMemo(() =>
     topic().trim().length > 0 &&
-    accessKey().trim().length > 0 &&
     !isGenerating()
   )
 
@@ -213,26 +214,6 @@ export default function DeckBuilder() {
 
             {/* Form */}
             <div class="bg-slate-800/50 rounded-xl p-8 border border-slate-700">
-              {/* Access Key */}
-              <div class="mb-6">
-                <label class="block text-sm font-medium text-slate-300 mb-2">
-                  Access Key
-                </label>
-                <input
-                  type="password"
-                  value={accessKey()}
-                  onInput={(e) => setAccessKey(e.currentTarget.value)}
-                  placeholder="sk_xxxxx"
-                  class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-                <p class="mt-2 text-sm text-slate-500">
-                  Get your key at{" "}
-                  <a href="https://apollo.app/keys" target="_blank" class="text-purple-400 hover:underline">
-                    apollo.app/keys
-                  </a>
-                </p>
-              </div>
-
               {/* Topic */}
               <div class="mb-6">
                 <label class="block text-sm font-medium text-slate-300 mb-2">

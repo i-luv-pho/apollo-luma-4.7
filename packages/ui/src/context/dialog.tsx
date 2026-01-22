@@ -10,7 +10,13 @@ import {
   type JSX,
 } from "solid-js"
 import { Dialog as Kobalte } from "@kobalte/core/dialog"
-import { randomBytes } from "crypto"
+
+// Browser-compatible random ID generator
+function randomId(length: number): string {
+  const bytes = new Uint8Array(length)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
+}
 
 type DialogElement = () => JSX.Element
 
@@ -39,7 +45,7 @@ function init() {
     close()
 
     // Fixed: Use cryptographically secure random instead of Math.random()
-    const id = randomBytes(12).toString("hex")
+    const id = randomId(12)
     let dispose: (() => void) | undefined
 
     const node = runWithOwner(owner, () =>

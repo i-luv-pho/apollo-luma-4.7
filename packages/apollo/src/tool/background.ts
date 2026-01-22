@@ -141,18 +141,34 @@ async function startTask(
     detached: process.platform !== "win32",
   })
 
+  // Check if process spawned successfully
+  if (!proc.pid) {
+    await logStream.close()
+    throw new Error(`Failed to spawn process: ${command}`)
+  }
+
   // Store process reference
   processes.set(id, proc)
 
   // Pipe output to log file
-  const writeLog = async (data: Buffer) => {
-    const timestamp = new Date().toISOString()
-    const lines = data.toString().split("\n")
-    for (const line of lines) {
-      if (line.trim()) {
-        await logStream.write(`[${timestamp}] ${line}\n`)
+  // Use a queue to prevent race conditions with concurrent writes
+  let writeQueue = Promise.resolve()
+  const writeLog = (data: Buffer) => {
+    writeQueue = writeQueue.then(async () => {
+      try {
+        const timestamp = new Date().toISOString()
+        const lines = data.toString().split("\n")
+        for (const line of lines) {
+          if (line.trim()) {
+            await logStream.write(`[${timestamp}] ${line}\n`)
+          }
+        }
+      } catch (err) {
+        log.error("Failed to write log", { id, name, error: err instanceof Error ? err.message : String(err) })
       }
-    }
+    }).catch(() => {
+      // Ignore errors in the queue chain
+    })
   }
 
   proc.stdout?.on("data", writeLog)
@@ -164,7 +180,7 @@ async function startTask(
     name,
     command,
     cwd,
-    pid: proc.pid!,
+    pid: proc.pid,
     status: "running",
     startedAt: Date.now(),
     logFile,
@@ -186,10 +202,19 @@ async function startTask(
   proc.on("error", async (err) => {
     task.status = "failed"
     task.endedAt = Date.now()
-    await saveTask(task)
-    await logStream.write(`[ERROR] ${err.message}\n`)
-    await logStream.close()
-    processes.delete(id)
+    try {
+      await saveTask(task)
+      await logStream.write(`[ERROR] ${err.message}\n`)
+    } catch (saveErr) {
+      log.error("Failed to save task or write error log", { id, name, error: saveErr instanceof Error ? saveErr.message : String(saveErr) })
+    } finally {
+      try {
+        await logStream.close()
+      } catch (closeErr) {
+        log.error("Failed to close log stream", { id, name, error: closeErr instanceof Error ? closeErr.message : String(closeErr) })
+      }
+      processes.delete(id)
+    }
     log.error("Background task error", { id, name, error: err.message })
   })
 
