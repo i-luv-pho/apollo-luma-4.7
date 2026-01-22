@@ -27,7 +27,8 @@ Return a JSON object with this exact structure:
       "headline": "Short punchy headline (max 60 chars)",
       "bullets": ["Point 1", "Point 2", "Point 3"],
       "imageQuery": "specific search term for stock photo",
-      "speakerNotes": "What the presenter should say for this slide"
+      "speakerNotes": "What the presenter should say for this slide",
+      "mermaidDiagram": "flowchart LR\\n  A[Step 1] --> B[Step 2] --> C[Step 3]"
     }
   ]
 }
@@ -40,12 +41,20 @@ Return a JSON object with this exact structure:
    - Opening line or question to engage audience
    - Key point to emphasize
    - Transition to next slide
+5. MERMAID DIAGRAM (for SOLUTION and HOW IT WORKS slides ONLY):
+   - Include a "mermaidDiagram" field with a simple flowchart
+   - Use "flowchart LR" for left-to-right process flows
+   - Keep it simple: 3-5 nodes maximum
+   - Use short labels (1-3 words per node)
+   - Use --> for arrows between steps
+   - Example: "flowchart LR\\n  A[Input] --> B[Process] --> C[Output]"
+   - For other slide types, omit this field entirely
 
 # Slide Flow for a Pitch Deck
 1. TITLE - Hook in 5 seconds
 2. PROBLEM - Feel the pain with real data
-3. SOLUTION - The answer, clear and simple
-4. HOW IT WORKS - Feel simple (optional)
+3. SOLUTION - The answer, clear and simple (INCLUDE mermaidDiagram)
+4. HOW IT WORKS - Feel simple (INCLUDE mermaidDiagram)
 5. MARKET - Big and real numbers (optional)
 6. IMPACT/TRACTION - Transformation or results
 7. CTA - Exact next action
@@ -63,6 +72,7 @@ interface SlideContent {
   bullets: string[]
   imageQuery: string
   speakerNotes: string
+  mermaidDiagram?: string // Optional flowchart for Solution/How slides
 }
 
 interface ContentResponse {
@@ -77,7 +87,7 @@ async function generateContent(
   apiKey: string,
   topic: string,
   numSlides: number,
-  documentContext: string
+  documentContext: string,
 ): Promise<ContentResponse> {
   const userPrompt = documentContext
     ? `Create a ${numSlides}-slide presentation about: "${topic}"\n\nUse this document as source material:\n${documentContext}`
@@ -88,14 +98,14 @@ async function generateContent(
     headers: {
       "Content-Type": "application/json",
       "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01"
+      "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8000,
       system: CONTENT_PROMPT,
-      messages: [{ role: "user", content: userPrompt }]
-    })
+      messages: [{ role: "user", content: userPrompt }],
+    }),
   })
 
   if (!response.ok) {
@@ -124,8 +134,8 @@ async function searchPhoto(apiKey: string, query: string): Promise<string | null
     const response = await fetch(
       `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
       {
-        headers: { "Authorization": apiKey }
-      }
+        headers: { Authorization: apiKey },
+      },
     )
 
     if (!response.ok) {
@@ -142,13 +152,39 @@ async function searchPhoto(apiKey: string, query: string): Promise<string | null
   }
 }
 
-async function getPhotosForSlides(
-  apiKey: string,
-  slides: SlideContent[]
-): Promise<(string | null)[]> {
+async function getPhotosForSlides(apiKey: string, slides: SlideContent[]): Promise<(string | null)[]> {
   // Search for all photos in parallel
-  const photoPromises = slides.map(slide => searchPhoto(apiKey, slide.imageQuery))
+  const photoPromises = slides.map((slide) => searchPhoto(apiKey, slide.imageQuery))
   return Promise.all(photoPromises)
+}
+
+/**
+ * Stage 2.5: Render Mermaid diagrams via Kroki API
+ * Kroki is a free diagram rendering service - no API key needed
+ */
+function renderMermaidToUrl(syntax: string): string | null {
+  try {
+    // Kroki expects base64-encoded diagram syntax
+    // Use TextEncoder for proper UTF-8 handling in Deno
+    const encoder = new TextEncoder()
+    const data = encoder.encode(syntax)
+    const base64 = btoa(String.fromCharCode(...data))
+    // URL-safe base64
+    const urlSafe = base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+    return `https://kroki.io/mermaid/png/${urlSafe}`
+  } catch (e) {
+    console.error("Failed to encode Mermaid diagram:", e)
+    return null
+  }
+}
+
+function getDiagramsForSlides(slides: SlideContent[]): (string | null)[] {
+  return slides.map((slide) => {
+    if (slide.mermaidDiagram) {
+      return renderMermaidToUrl(slide.mermaidDiagram)
+    }
+    return null
+  })
 }
 
 /**
@@ -159,9 +195,10 @@ async function createGammaPresentation(
   title: string,
   slides: SlideContent[],
   photos: (string | null)[],
-  theme: keyof typeof THEMES
+  diagrams: (string | null)[],
+  theme: keyof typeof THEMES,
 ): Promise<{ generationId: string }> {
-  // Format content for Gamma with photo URLs embedded
+  // Format content for Gamma with photo URLs and diagrams embedded
   // Use \n---\n to separate slides
   const inputParts: string[] = []
 
@@ -171,12 +208,17 @@ async function createGammaPresentation(
   for (let i = 0; i < slides.length; i++) {
     const slide = slides[i]
     const photo = photos[i]
+    const diagram = diagrams[i]
 
     let slideText = `# ${slide.headline}\n\n`
-    slideText += slide.bullets.map(b => `- ${b}`).join("\n")
+    slideText += slide.bullets.map((b) => `- ${b}`).join("\n")
 
-    // Embed photo URL if available
-    if (photo) {
+    // Embed diagram if available (for Solution/How slides)
+    // Diagrams take priority over photos for these slides
+    if (diagram) {
+      slideText += `\n\n![process flow](${diagram})`
+    } else if (photo) {
+      // Fall back to photo if no diagram
       slideText += `\n\n![](${photo})`
     }
 
@@ -205,7 +247,7 @@ async function createGammaPresentation(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-KEY": apiKey
+      "X-API-KEY": apiKey,
     },
     body: JSON.stringify({
       inputText,
@@ -216,15 +258,15 @@ async function createGammaPresentation(
       additionalInstructions: styleInstructions,
       exportAs: "pptx", // Export as PowerPoint for download
       textOptions: {
-        amount: "medium"
+        amount: "medium",
       },
       imageOptions: {
-        source: "noImages" // We already embedded Pexels photos
+        source: "noImages", // We already embedded Pexels photos
       },
       cardOptions: {
-        dimensions: "16x9"
-      }
-    })
+        dimensions: "16x9",
+      },
+    }),
   })
 
   if (!response.ok) {
@@ -250,7 +292,7 @@ interface GammaCompletionResult {
 async function waitForGammaCompletion(
   apiKey: string,
   generationId: string,
-  maxWaitMs: number = 180000 // 3 minutes total
+  maxWaitMs: number = 180000, // 3 minutes total
 ): Promise<GammaCompletionResult> {
   const startTime = Date.now()
   let exportPollCount = 0
@@ -258,7 +300,7 @@ async function waitForGammaCompletion(
 
   while (Date.now() - startTime < maxWaitMs) {
     const response = await fetch(`https://public-api.gamma.app/v1.0/generations/${generationId}`, {
-      headers: { "X-API-KEY": apiKey }
+      headers: { "X-API-KEY": apiKey },
     })
 
     if (!response.ok) {
@@ -267,21 +309,23 @@ async function waitForGammaCompletion(
     }
 
     const data = await response.json()
-    console.log(`[Gamma] Poll response (exportPollCount=${exportPollCount}): status=${data.status}, downloadLink=${data.downloadLink || 'none'}`)
+    console.log(
+      `[Gamma] Poll response (exportPollCount=${exportPollCount}): status=${data.status}, downloadLink=${data.downloadLink || "none"}`,
+    )
 
     if (data.status === "completed") {
       // Extract export URLs if available
       const result: GammaCompletionResult = {
         gammaUrl: data.gammaUrl,
-        credits: data.credits
+        credits: data.credits,
       }
 
       // Gamma returns downloadLink when exportAs is specified
       if (data.downloadLink) {
         // Check if it's PPTX or PDF based on URL
-        if (data.downloadLink.includes('/pptx/') || data.downloadLink.endsWith('.pptx')) {
+        if (data.downloadLink.includes("/pptx/") || data.downloadLink.endsWith(".pptx")) {
           result.pptxUrl = data.downloadLink
-        } else if (data.downloadLink.includes('/pdf/') || data.downloadLink.endsWith('.pdf')) {
+        } else if (data.downloadLink.includes("/pdf/") || data.downloadLink.endsWith(".pdf")) {
           result.pdfUrl = data.downloadLink
         } else {
           // Default to PPTX since we requested it
@@ -305,11 +349,11 @@ async function waitForGammaCompletion(
       if (!result.pptxUrl && !result.pdfUrl && exportPollCount < maxExportPolls) {
         exportPollCount++
         console.log(`[Gamma] Completed but no export URL yet, polling again (${exportPollCount}/${maxExportPolls})...`)
-        await new Promise(resolve => setTimeout(resolve, 3000)) // Wait 3 seconds
+        await new Promise((resolve) => setTimeout(resolve, 3000)) // Wait 3 seconds
         continue // Poll again for export URL
       }
 
-      console.log(`[Gamma] Final result: gammaUrl=${result.gammaUrl}, pptxUrl=${result.pptxUrl || 'none'}`)
+      console.log(`[Gamma] Final result: gammaUrl=${result.gammaUrl}, pptxUrl=${result.pptxUrl || "none"}`)
       return result
     }
 
@@ -318,7 +362,7 @@ async function waitForGammaCompletion(
     }
 
     // Wait 2 seconds before checking again
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000))
   }
 
   throw new Error("Gamma generation timed out")
@@ -331,15 +375,14 @@ serve(async (req) => {
     // Get access key from header
     const accessKey = req.headers.get("x-access-key")
     if (!accessKey) {
-      return new Response(JSON.stringify({ success: false, error: "Access key required" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      return new Response(JSON.stringify({ success: false, error: "Access key required" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
     }
 
     // Create Supabase client with service role
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    )
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
 
     // Validate access key
     const { data: keyData, error: keyError } = await supabase
@@ -349,30 +392,40 @@ serve(async (req) => {
       .single()
 
     if (keyError || !keyData) {
-      return new Response(JSON.stringify({ success: false, error: "Invalid access key" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      return new Response(JSON.stringify({ success: false, error: "Invalid access key" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
     }
 
     if (!keyData.active) {
-      return new Response(JSON.stringify({ success: false, error: "Access key disabled" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      return new Response(JSON.stringify({ success: false, error: "Access key disabled" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
     }
 
     if (keyData.expires_at && new Date(keyData.expires_at) < new Date()) {
-      return new Response(JSON.stringify({ success: false, error: "Access key expired" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      return new Response(JSON.stringify({ success: false, error: "Access key expired" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
     }
 
     if (keyData.decks_used >= keyData.decks_limit) {
-      return new Response(JSON.stringify({ success: false, error: `Limit reached (${keyData.decks_used}/${keyData.decks_limit})` }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      return new Response(
+        JSON.stringify({ success: false, error: `Limit reached (${keyData.decks_used}/${keyData.decks_limit})` }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      )
     }
 
     // Parse request
     const { topic, slides = 7, theme = "pure-white", documentContext = "" } = await req.json()
     if (!topic) {
-      return new Response(JSON.stringify({ success: false, error: "Topic required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      return new Response(JSON.stringify({ success: false, error: "Topic required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
     }
 
     // Get API keys from environment
@@ -381,8 +434,10 @@ serve(async (req) => {
     const gammaKey = Deno.env.get("GAMMA_API_KEY")
 
     if (!anthropicKey || !pexelsKey || !gammaKey) {
-      return new Response(JSON.stringify({ success: false, error: "Server not configured (missing API keys)" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+      return new Response(JSON.stringify({ success: false, error: "Server not configured (missing API keys)" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
     }
 
     console.log(`[Stage 1] Generating content for: ${topic}`)
@@ -394,18 +449,25 @@ serve(async (req) => {
     // Stage 2: Pexels finds photos
     console.log(`[Stage 2] Searching photos...`)
     const photos = await getPhotosForSlides(pexelsKey, content.slides)
-    const photosFound = photos.filter(p => p !== null).length
+    const photosFound = photos.filter((p) => p !== null).length
     console.log(`[Stage 2] Found ${photosFound}/${content.slides.length} photos`)
+
+    // Stage 2.5: Render Mermaid diagrams
+    console.log(`[Stage 2.5] Rendering diagrams...`)
+    const diagrams = getDiagramsForSlides(content.slides)
+    const diagramsFound = diagrams.filter((d) => d !== null).length
+    console.log(`[Stage 2.5] Generated ${diagramsFound} diagrams`)
 
     // Stage 3: Gamma creates presentation
     console.log(`[Stage 3] Creating Gamma presentation...`)
-    const validTheme = (theme in THEMES) ? theme as keyof typeof THEMES : "pure-white"
+    const validTheme = theme in THEMES ? (theme as keyof typeof THEMES) : "pure-white"
     const { generationId } = await createGammaPresentation(
       gammaKey,
       content.title,
       content.slides,
       photos,
-      validTheme
+      diagrams,
+      validTheme,
     )
     console.log(`[Stage 3] Generation started: ${generationId}`)
 
@@ -421,22 +483,27 @@ serve(async (req) => {
       .update({ decks_used: keyData.decks_used + 1 })
       .eq("id", keyData.id)
 
-    return new Response(JSON.stringify({
-      success: true,
-      gammaUrl,
-      pptxUrl,
-      pdfUrl,
-      title: content.title,
-      slideCount: content.slides.length + 1, // +1 for title slide
-      photosUsed: photosFound,
-      gammaCredits: credits,
-      usage: { decks_used: keyData.decks_used + 1, decks_limit: keyData.decks_limit }
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } })
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        gammaUrl,
+        pptxUrl,
+        pdfUrl,
+        title: content.title,
+        slideCount: content.slides.length + 1, // +1 for title slide
+        photosUsed: photosFound,
+        diagramsUsed: diagramsFound,
+        gammaCredits: credits,
+        usage: { decks_used: keyData.decks_used + 1, decks_limit: keyData.decks_limit },
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    )
   } catch (e: any) {
     console.error("Error:", e)
     const errorMsg = e?.message || String(e) || "Unknown error"
-    return new Response(JSON.stringify({ success: false, error: errorMsg }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } })
+    return new Response(JSON.stringify({ success: false, error: errorMsg }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    })
   }
 })

@@ -13,20 +13,22 @@ const DECK_DIR = path.join(os.homedir(), "Apollo", "decks")
 
 // Apollo API endpoint (Supabase Edge Function)
 const APOLLO_API_URL = "https://advpygqokfxmomlumkgl.supabase.co/functions/v1/generate-deck"
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg"
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdnB5Z3Fva2Z4bW9tbHVta2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MjY5NzMsImV4cCI6MjA4NDQwMjk3M30.2OK3fN17IkBpFJL8c1BfTfr2WtJ4exlBDikNvGw9zXg"
 
 // Available themes (light mode only)
 const THEMES = ["pure-white", "warm-white", "light-gray"] as const
-type Theme = typeof THEMES[number]
+type Theme = (typeof THEMES)[number]
 
 function getNextDeckId(): string {
   if (!fs.existsSync(DECK_DIR)) {
     fs.mkdirSync(DECK_DIR, { recursive: true })
   }
 
-  const existing = fs.readdirSync(DECK_DIR)
-    .filter(f => /^\d{3}-/.test(f))
-    .map(f => parseInt(f.slice(0, 3)))
+  const existing = fs
+    .readdirSync(DECK_DIR)
+    .filter((f) => /^\d{3}-/.test(f))
+    .map((f) => parseInt(f.slice(0, 3)))
     .sort((a, b) => b - a)
 
   const next = (existing[0] || 0) + 1
@@ -48,6 +50,7 @@ interface GenerateDeckResponse {
   title?: string
   slideCount?: number
   photosUsed?: number
+  diagramsUsed?: number
   gammaCredits?: {
     deducted: number
     remaining: number
@@ -72,26 +75,26 @@ async function generateDeckViaAPI(
   slides: number,
   theme: Theme,
   documentContext: string,
-  assets: Asset[]
+  assets: Asset[],
 ): Promise<GenerateDeckResponse> {
   const response = await fetch(APOLLO_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      "x-access-key": accessKey
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "x-access-key": accessKey,
     },
     body: JSON.stringify({
       topic,
       slides,
       theme,
       documentContext,
-      assets: assets.map(a => ({
+      assets: assets.map((a) => ({
         label: a.label,
         public_url: a.public_url,
-        description: a.description
-      }))
-    })
+        description: a.description,
+      })),
+    }),
   })
 
   const data = await response.json()
@@ -146,7 +149,7 @@ export const DeckCommand = cmd({
 
     if (!topic) {
       UI.error("Please provide a topic for your deck")
-      UI.println("Usage: apollo deck \"AI-powered food delivery for students\"")
+      UI.println('Usage: apollo deck "AI-powered food delivery for students"')
       process.exit(1)
     }
 
@@ -164,7 +167,9 @@ export const DeckCommand = cmd({
     }
 
     UI.println()
-    UI.println(UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder (Powered by Gamma)")
+    UI.println(
+      UI.Style.TEXT_HIGHLIGHT_BOLD + "Deck" + UI.Style.TEXT_NORMAL + " — AI Pitch Deck Builder (Powered by Gamma)",
+    )
     UI.println()
 
     // Fetch user's assets
@@ -240,14 +245,7 @@ export const DeckCommand = cmd({
     UI.println(UI.Style.TEXT_DIM + "  Stage 1: Claude writing content..." + UI.Style.TEXT_NORMAL)
 
     try {
-      const result = await generateDeckViaAPI(
-        accessKey,
-        topic,
-        args.slides,
-        theme,
-        documentContext,
-        assets
-      )
+      const result = await generateDeckViaAPI(accessKey, topic, args.slides, theme, documentContext, assets)
 
       if (!result.success) {
         UI.error(result.error || "Generation failed")
@@ -257,6 +255,7 @@ export const DeckCommand = cmd({
       // Handle Gamma URL response (new flow)
       if (result.gammaUrl) {
         UI.println(UI.Style.TEXT_DIM + "  Stage 2: Pexels finding photos..." + UI.Style.TEXT_NORMAL)
+        UI.println(UI.Style.TEXT_DIM + "  Stage 2.5: Rendering Mermaid diagrams..." + UI.Style.TEXT_NORMAL)
         UI.println(UI.Style.TEXT_DIM + "  Stage 3: Gamma creating presentation..." + UI.Style.TEXT_NORMAL)
         UI.println()
 
@@ -264,13 +263,16 @@ export const DeckCommand = cmd({
         UI.println()
 
         if (result.title) {
-          UI.println(UI.Style.TEXT_DIM + "Title:  " + UI.Style.TEXT_NORMAL + result.title)
+          UI.println(UI.Style.TEXT_DIM + "Title:    " + UI.Style.TEXT_NORMAL + result.title)
         }
         if (result.slideCount) {
-          UI.println(UI.Style.TEXT_DIM + "Slides: " + UI.Style.TEXT_NORMAL + `${result.slideCount} slides`)
+          UI.println(UI.Style.TEXT_DIM + "Slides:   " + UI.Style.TEXT_NORMAL + `${result.slideCount} slides`)
         }
         if (result.photosUsed !== undefined) {
-          UI.println(UI.Style.TEXT_DIM + "Photos: " + UI.Style.TEXT_NORMAL + `${result.photosUsed} from Pexels`)
+          UI.println(UI.Style.TEXT_DIM + "Photos:   " + UI.Style.TEXT_NORMAL + `${result.photosUsed} from Pexels`)
+        }
+        if (result.diagramsUsed !== undefined && result.diagramsUsed > 0) {
+          UI.println(UI.Style.TEXT_DIM + "Diagrams: " + UI.Style.TEXT_NORMAL + `${result.diagramsUsed} flowcharts`)
         }
         UI.println()
 
@@ -280,10 +282,16 @@ export const DeckCommand = cmd({
 
         // Show usage
         if (result.usage) {
-          UI.println(UI.Style.TEXT_DIM + `Usage: ${result.usage.decks_used}/${result.usage.decks_limit} decks` + UI.Style.TEXT_NORMAL)
+          UI.println(
+            UI.Style.TEXT_DIM +
+              `Usage: ${result.usage.decks_used}/${result.usage.decks_limit} decks` +
+              UI.Style.TEXT_NORMAL,
+          )
         }
         if (result.gammaCredits) {
-          UI.println(UI.Style.TEXT_DIM + `Gamma credits: ${result.gammaCredits.remaining} remaining` + UI.Style.TEXT_NORMAL)
+          UI.println(
+            UI.Style.TEXT_DIM + `Gamma credits: ${result.gammaCredits.remaining} remaining` + UI.Style.TEXT_NORMAL,
+          )
         }
         UI.println()
 
@@ -324,7 +332,7 @@ You can edit, share, and export it from the URL above.
           UI.println(UI.Style.TEXT_SUCCESS_BOLD + "Opened in browser!" + UI.Style.TEXT_NORMAL)
         }
 
-      // Handle legacy HTML response (fallback)
+        // Handle legacy HTML response (fallback)
       } else if (result.html) {
         const deckId = getNextDeckId()
         const slug = slugify(topic)
@@ -350,7 +358,11 @@ You can edit, share, and export it from the URL above.
 
         // Show usage
         if (result.usage) {
-          UI.println(UI.Style.TEXT_DIM + `Usage: ${result.usage.decks_used}/${result.usage.decks_limit} decks` + UI.Style.TEXT_NORMAL)
+          UI.println(
+            UI.Style.TEXT_DIM +
+              `Usage: ${result.usage.decks_used}/${result.usage.decks_limit} decks` +
+              UI.Style.TEXT_NORMAL,
+          )
         }
 
         UI.println()
@@ -367,7 +379,6 @@ You can edit, share, and export it from the URL above.
         UI.error("No presentation generated")
         process.exit(1)
       }
-
     } catch (error) {
       UI.error(`Generation failed: ${error instanceof Error ? error.message : String(error)}`)
       process.exit(1)
